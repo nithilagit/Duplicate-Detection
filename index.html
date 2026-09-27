@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Based Duplicate Question Detection System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bs-primary: #1e3a8a;
+            --bs-primary-dark: #0f172a;
+            --bs-accent: #2563eb;
+            --bs-success-soft: #ecfdf5;
+            --bs-danger-soft: #fef2f2;
+            --bs-warning-soft: #fffbeb;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .navbar-academic {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+            border-bottom: 2px solid #3b82f6;
+        }
+        .nav-pills .nav-link {
+            color: #475569;
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 8px 16px;
+            transition: all 0.2s ease;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #1e3a8a;
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.25);
+        }
+        .card-stat {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #ffffff;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-stat:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+        }
+        .badge-co { background-color: #e0e7ff; color: #3730a3; font-weight: 600; }
+        .badge-bloom { background-color: #f1f5f9; color: #334155; font-weight: 600; }
+        .similarity-gauge {
+            height: 12px;
+            border-radius: 6px;
+            background-color: #e2e8f0;
+            overflow: hidden;
+        }
+        .similarity-fill {
+            height: 100%;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .print-sheet {
+            background: white;
+            padding: 40px;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-width: 850px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <nav class="navbar navbar-dark navbar-academic shadow-sm sticky-top">
+        <div class="container-fluid px-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-white rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 42px; height: 42px;">
+                    <i class="bi bi-shield-check text-primary fs-4"></i>
+                </div>
+                <div>
+                    <span class="navbar-brand mb-0 h6 fw-bold tracking-tight d-block text-white">AI Duplicate Question Detection</span>
+                    <small class="text-white-50" style="font-size: 0.75rem;">Department of Artificial Intelligence and Data Science | SRM EEC</small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                    <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> System Live (v1.0)
+                </span>
+                <div class="dropdown">
+                    <button class="btn btn-outline-light btn-sm dropdown-toggle rounded-pill px-3" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle me-1"></i> Dr. Sarah Jenkins
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li><h6 class="dropdown-header">faculty@eec.srmrmp.edu.in</h6></li>
+                        <li><span class="dropdown-item-text small text-muted">Dept of AI & Data Science</span></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger small" href="#" onclick="alert('Demo session remains active.')"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sub-Navbar Navigation Tabs -->
+    <div class="bg-white border-bottom shadow-sm">
+        <div class="container-fluid px-4">
+            <ul class="nav nav-pills py-2 gap-2" id="mainTab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard-tab">
+                        <i class="bi bi-grid-1x2-fill me-1"></i> Dashboard
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#questions-tab">
+                        <i class="bi bi-journal-text me-1"></i> Question Bank (<span id="totalBadgeCount">48</span>)
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#add-tab">
+                        <i class="bi bi-plus-circle-fill me-1"></i> Add Question
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ai-tab">
+                        <i class="bi bi-cpu-fill me-1"></i> AI Duplicate Checker
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#paper-tab">
+                        <i class="bi bi-file-earmark-text-fill me-1"></i> Question Paper Builder
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container-fluid px-4 py-4">
+        <div class="tab-content" id="mainTabContent">
+
+            <!-- 1. DASHBOARD TAB -->
+            <div class="tab-pane fade show active" id="dashboard-tab">
+                <!-- KPI Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-xl col-md-4 col-sm-6">
+                        <div class="card card-stat p-3 h-100">
+                            <span class="text-muted small fw-semibold">Total Questions</span>
+                            <div class="d-flex align-items-center justify-content-between mt-2">
+                                <h3 class="fw-bold mb-0 text-dark" id="kpiTotalQuestions">48</h3>
+                                <div class="bg-primary-subtle text-primary p-2 rounded-3"><i class="bi bi-journal-text fs-4"></i></div>
+                            </div>
+                            <small class="text-success mt-2 d-block"><i class="bi bi-check2-circle"></i> 6 Curriculums Active</small>
+                        </div>
+                    </div>
+                    <div class="col-xl col-md-4 col-sm-6">
+                        <div class="card card-stat p-3 h-100">
+                            <span class="text-muted small fw-semibold">Duplicates Prevented</span>
+                            <div class="d-flex align-items-center justify-content-between mt-2">
+                                <h3 class="fw-bold mb-0 text-danger">18</h3>
+                                <div class="bg-danger-subtle text-danger p-2 rounded-3"><i class="bi bi-shield-x fs-4"></i></div>
+                            </div>
+                            <small class="text-muted mt-2 d-block">Threshold: &ge; 85% Cosine</small>
+                        </div>
+                    </div>
+                    <div class="col-xl col-md-4 col-sm-6">
+                        <div class="card card-stat p-3 h-100">
+                            <span class="text-muted small fw-semibold">Papers Generated</span>
+                            <div class="d-flex align-items-center justify-content-between mt-2">
+                                <h3 class="fw-bold mb-0 text-success">8</h3>
+                                <div class="bg-success-subtle text-success p-2 rounded-3"><i class="bi bi-file-earmark-check fs-4"></i></div>
+                            </div>
+                            <small class="text-muted mt-2 d-block">All Parts A & B Verified</small>
+                        </div>
+                    </div>
+                    <div class="col-xl col-md-6 col-sm-6">
+                        <div class="card card-stat p-3 h-100">
+                            <span class="text-muted small fw-semibold">Faculty Members</span>
+                            <div class="d-flex align-items-center justify-content-between mt-2">
+                                <h3 class="fw-bold mb-0 text-info">12</h3>
+                                <div class="bg-info-subtle text-info p-2 rounded-3"><i class="bi bi-people fs-4"></i></div>
+                            </div>
+                            <small class="text-muted mt-2 d-block">Dept of AI & Data Science</small>
+                        </div>
+                    </div>
+                    <div class="col-xl col-md-6 col-sm-12">
+                        <div class="card card-stat p-3 h-100">
+                            <span class="text-muted small fw-semibold">Semantic AI Vector Engine</span>
+                            <div class="d-flex align-items-center justify-content-between mt-2">
+                                <h3 class="fw-bold mb-0 text-primary">Active</h3>
+                                <div class="bg-primary-subtle text-primary p-2 rounded-3"><i class="bi bi-cpu fs-4"></i></div>
+                            </div>
+                            <small class="text-muted mt-2 d-block">TF-IDF Vector Space</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-7">
+                        <div class="card card-stat p-4 h-100">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Question Distribution Across 6 Subjects</h6>
+                            <div style="height: 260px;">
+                                <canvas id="chartSubjects"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="card card-stat p-4 h-100">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-pie-chart-fill text-info me-2"></i>Bloom's Taxonomy Breakdown</h6>
+                            <div style="height: 260px;">
+                                <canvas id="chartBloom"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Questions Preview -->
+                <div class="card card-stat p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-secondary me-2"></i>Recently Added Questions</h6>
+                        <button class="btn btn-sm btn-outline-primary" onclick="showTab('#questions-tab')">View Full Bank</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Unit</th>
+                                    <th>Question Text</th>
+                                    <th>CO</th>
+                                    <th>Bloom</th>
+                                    <th>Marks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentQuestionsTbody" class="small"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. QUESTION BANK TAB -->
+            <div class="tab-pane fade" id="questions-tab">
+                <div class="card card-stat p-4">
+                    <div class="row g-3 mb-3 align-items-center">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" id="bankSearch" class="form-control" placeholder="Search questions by keyword..." oninput="renderQuestionBank()">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="bankSubjectFilter" class="form-select form-select-sm" onchange="renderQuestionBank()">
+                                <option value="">All Subjects (6 Curriculums)</option>
+                                <option value="Discrete Mathematics">Discrete Mathematics</option>
+                                <option value="Computer Networks">Computer Networks</option>
+                                <option value="Advanced Data Structures and Algorithms">Advanced Data Structures and Algorithms</option>
+                                <option value="Embedded System Design">Embedded System Design</option>
+                                <option value="Machine Learning Techniques">Machine Learning Techniques</option>
+                                <option value="Object Oriented Programming using Java">Object Oriented Programming using Java</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-sm btn-primary" onclick="showTab('#add-tab')">
+                                <i class="bi bi-plus-lg me-1"></i> Add New Question
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th style="width: 60px;">#</th>
+                                    <th style="width: 220px;">Subject & Unit</th>
+                                    <th>Question Description</th>
+                                    <th style="width: 80px;">CO</th>
+                                    <th style="width: 110px;">Bloom</th>
+                                    <th style="width: 70px;">Marks</th>
+                                    <th style="width: 90px;">Difficulty</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bankTbody" class="small"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. ADD QUESTION TAB -->
+            <div class="tab-pane fade" id="add-tab">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card card-stat p-4">
+                            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-file-earmark-plus text-primary me-2"></i>Add Question to Curriculum Bank</h5>
+                            <form id="addQuestionForm" onsubmit="handleAddQuestion(event)">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Question Text <span class="text-danger">*</span></label>
+                                    <textarea id="addText" class="form-control" rows="3" placeholder="Enter complete question statement..." required></textarea>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-7">
+                                        <label class="form-label small fw-bold">Subject <span class="text-danger">*</span></label>
+                                        <select id="addSubject" class="form-select" required>
+                                            <option value="Discrete Mathematics">Discrete Mathematics</option>
+                                            <option value="Computer Networks">Computer Networks</option>
+                                            <option value="Advanced Data Structures and Algorithms">Advanced Data Structures and Algorithms</option>
+                                            <option value="Embedded System Design">Embedded System Design</option>
+                                            <option value="Machine Learning Techniques">Machine Learning Techniques</option>
+                                            <option value="Object Oriented Programming using Java">Object Oriented Programming using Java</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label small fw-bold">Unit <span class="text-danger">*</span></label>
+                                        <select id="addUnit" class="form-select">
+                                            <option value="Unit I">Unit I</option>
+                                            <option value="Unit II">Unit II</option>
+                                            <option value="Unit III">Unit III</option>
+                                            <option value="Unit IV">Unit IV</option>
+                                            <option value="Unit V">Unit V</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Course Outcome</label>
+                                        <select id="addCO" class="form-select">
+                                            <option value="CO1">CO1</option>
+                                            <option value="CO2">CO2</option>
+                                            <option value="CO3">CO3</option>
+                                            <option value="CO4">CO4</option>
+                                            <option value="CO5">CO5</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Bloom's Taxonomy</label>
+                                        <select id="addBloom" class="form-select">
+                                            <option value="Remember">Remember</option>
+                                            <option value="Understand" selected>Understand</option>
+                                            <option value="Apply">Apply</option>
+                                            <option value="Analyze">Analyze</option>
+                                            <option value="Evaluate">Evaluate</option>
+                                            <option value="Create">Create</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Marks</label>
+                                        <input type="number" id="addMarks" class="form-control" value="8" min="1" max="20">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Difficulty</label>
+                                        <select id="addDifficulty" class="form-select">
+                                            <option value="Easy">Easy</option>
+                                            <option value="Medium" selected>Medium</option>
+                                            <option value="Hard">Hard</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="reset" class="btn btn-outline-secondary">Reset</button>
+                                    <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save to Question Bank</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. AI DUPLICATE CHECKER TAB -->
+            <div class="tab-pane fade" id="ai-tab">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="card card-stat p-4 h-100">
+                            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-cpu text-primary me-2"></i>AI Semantic Duplicate Analysis</h5>
+                            
+                            <!-- Quick Test Scenarios -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted mb-1">Quick Test Scenarios (Click to Load):</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="loadSample(1)">
+                                        <i class="bi bi-fire me-1"></i> Test High Duplicate (TCP)
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="loadSample(2)">
+                                        <i class="bi bi-exclamation-triangle me-1"></i> Test Duplicate (Machine Learning)
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" onclick="loadSample(3)">
+                                        <i class="bi bi-check-circle me-1"></i> Test Unique Question
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Subject Scope (Optional)</label>
+                                <select id="aiSubject" class="form-select">
+                                    <option value="">All Subjects (Global Question Bank)</option>
+                                    <option value="Discrete Mathematics">Discrete Mathematics</option>
+                                    <option value="Computer Networks">Computer Networks</option>
+                                    <option value="Advanced Data Structures and Algorithms">Advanced Data Structures and Algorithms</option>
+                                    <option value="Embedded System Design">Embedded System Design</option>
+                                    <option value="Machine Learning Techniques">Machine Learning Techniques</option>
+                                    <option value="Object Oriented Programming using Java">Object Oriented Programming using Java</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Question to Check</label>
+                                <textarea id="aiInput" class="form-control" rows="4" placeholder="Enter new question statement to test for semantic duplication..."></textarea>
+                            </div>
+
+                            <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="runAiCheck()">
+                                <i class="bi bi-cpu me-1"></i> Run AI Similarity Check
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- AI Analysis Result Card -->
+                    <div class="col-lg-6">
+                        <div class="card card-stat p-4 h-100" id="aiResultCard">
+                            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-graph-up-arrow text-success me-2"></i>Similarity Analysis Result</h5>
+                            <div id="aiEmptyState" class="text-center py-5 text-muted">
+                                <i class="bi bi-search fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                <p class="mb-0">Enter a question or click a Quick Test Scenario to see live semantic similarity scoring.</p>
+                            </div>
+                            <div id="aiOutput" style="display: none;">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="fw-bold text-dark" id="aiMatchLabel">Highest Similarity Match</span>
+                                    <span class="badge px-3 py-2 fs-6 rounded-pill" id="aiBadge">HIGHLY SIMILAR</span>
+                                </div>
+
+                                <div class="similarity-gauge mb-3">
+                                    <div class="similarity-fill" id="aiGaugeBar" style="width: 0%;"></div>
+                                </div>
+                                <h3 class="fw-bolder mb-3 text-dark" id="aiPercentage">0%</h3>
+
+                                <div class="alert p-3 rounded-3" id="aiAlertBox">
+                                    <i class="bi bi-info-circle-fill me-2" id="aiAlertIcon"></i>
+                                    <span id="aiRecommendationText">Recommendation analysis</span>
+                                </div>
+
+                                <div class="border rounded-3 p-3 bg-light" id="aiMatchedCard">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="text-muted fw-bold">CLOSEST MATCH IN DATABASE</small>
+                                        <span class="badge bg-white text-dark border small" id="aiMatchedSubject">Subject</span>
+                                    </div>
+                                    <p class="mb-0 fw-semibold text-dark small" id="aiMatchedText">Question statement</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. PAPER BUILDER TAB -->
+            <div class="tab-pane fade" id="paper-tab">
+                <div class="card card-stat p-4 mb-4">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold mb-1">Select Subject</label>
+                            <select id="paperSubject" class="form-select form-select-sm" onchange="renderPaperBuilder()">
+                                <option value="Discrete Mathematics">Discrete Mathematics</option>
+                                <option value="Computer Networks" selected>Computer Networks</option>
+                                <option value="Advanced Data Structures and Algorithms">Advanced Data Structures and Algorithms</option>
+                                <option value="Embedded System Design">Embedded System Design</option>
+                                <option value="Machine Learning Techniques">Machine Learning Techniques</option>
+                                <option value="Object Oriented Programming using Java">Object Oriented Programming using Java</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold mb-1">Exam Type</label>
+                            <input type="text" id="paperTitle" class="form-control form-control-sm" value="End-Semester Examination - Nov 2026">
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-sm btn-success mt-3" onclick="generateAndPrintPaper()">
+                                <i class="bi bi-printer me-1"></i> Preview & Print Question Paper
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="card card-stat p-3 h-100">
+                            <h6 class="fw-bold text-dark mb-2">Available Questions in Subject</h6>
+                            <small class="text-muted mb-3 d-block">Click (+) to add question into examination sections.</small>
+                            <div class="list-group list-group-flush small" id="paperSourceList" style="max-height: 450px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card card-stat p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-dark mb-0">Configured Examination Paper</h6>
+                                <span class="badge bg-primary fs-6" id="totalMarksBadge">Total Marks: 0 / 100</span>
+                            </div>
+                            <div class="p-2 border rounded-3 bg-light mb-3">
+                                <span class="fw-bold small text-dark d-block mb-1">Part A (Short Answer - 2 Marks each)</span>
+                                <div id="partAList" class="small text-muted">No questions added yet.</div>
+                            </div>
+                            <div class="p-2 border rounded-3 bg-light">
+                                <span class="fw-bold small text-dark d-block mb-1">Part B (Descriptive / Problem - 10-13 Marks each)</span>
+                                <div id="partBList" class="small text-muted">No questions added yet.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Printable Paper Modal -->
+    <div class="modal fade" id="printModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Official Question Paper Print Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light p-4">
+                    <div class="print-sheet" id="printSheetContent">
+                        <div class="text-center border-bottom pb-3 mb-3">
+                            <h4 class="fw-bold text-dark mb-1">SRM EASWARI ENGINEERING COLLEGE</h4>
+                            <h6 class="fw-semibold text-secondary mb-1">Department of Artificial Intelligence and Data Science</h6>
+                            <p class="small text-muted mb-0" id="printModalTitle">End-Semester Examination</p>
+                            <p class="small fw-semibold text-dark mb-0" id="printModalSubj">Subject: Computer Networks</p>
+                        </div>
+                        <div class="d-flex justify-content-between small fw-semibold text-secondary mb-3">
+                            <span>Max Marks: 100</span>
+                            <span>Time: 3 Hours</span>
+                            <span>Course Outcomes: CO1 - CO5</span>
+                        </div>
+                        <h6 class="fw-bold border-bottom pb-1 text-primary">PART A (5 x 2 = 10 Marks)</h6>
+                        <ol id="printPartA" class="small mb-4 ps-3"></ol>
+                        <h6 class="fw-bold border-bottom pb-1 text-primary">PART B (4 x 10 = 40 Marks)</h6>
+                        <ol id="printPartB" class="small ps-3"></ol>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i> Print Paper</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Seed Dataset & Semantic Similarity Vector Script -->
+    <script>
+        const initialQuestions = [
+            // 1. Computer Networks
+            { id: 1, subject: "Computer Networks", unit: "Unit III", co: "CO3", bloom: "Understand", marks: 10, difficulty: "Medium", type: "Descriptive", text: "Explain the working principle of TCP congestion control." },
+            { id: 2, subject: "Computer Networks", unit: "Unit III", co: "CO3", bloom: "Understand", marks: 10, difficulty: "Medium", type: "Descriptive", text: "Describe how congestion control is handled in TCP." },
+            { id: 3, subject: "Computer Networks", unit: "Unit IV", co: "CO4", bloom: "Apply", marks: 13, difficulty: "Hard", type: "Problem", text: "Explain Dijkstra's shortest path routing algorithm with an example." },
+            { id: 4, subject: "Computer Networks", unit: "Unit I", co: "CO1", bloom: "Analyze", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Compare the OSI reference model with the TCP/IP protocol suite across all layers." },
+            { id: 5, subject: "Computer Networks", unit: "Unit II", co: "CO2", bloom: "Apply", marks: 10, difficulty: "Hard", type: "Descriptive", text: "Explain the mechanism of sliding window protocol with Go-Back-N and Selective Repeat ARQ." },
+            { id: 6, subject: "Computer Networks", unit: "Unit III", co: "CO3", bloom: "Analyze", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Explain the three-way handshake connection establishment and teardown process in TCP." },
+            { id: 7, subject: "Computer Networks", unit: "Unit III", co: "CO3", bloom: "Apply", marks: 6, difficulty: "Medium", type: "Problem", text: "What is subnetting? Calculate the subnet mask and host range for IP address 192.168.10.0/26." },
+            { id: 8, subject: "Computer Networks", unit: "Unit V", co: "CO5", bloom: "Understand", marks: 7, difficulty: "Easy", type: "Descriptive", text: "Describe the architecture and message exchange flow of the Domain Name System (DNS)." },
+
+            // 2. Discrete Mathematics
+            { id: 9, subject: "Discrete Mathematics", unit: "Unit I", co: "CO1", bloom: "Understand", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Define an equivalence relation and determine whether a relation is reflexive, symmetric, and transitive." },
+            { id: 10, subject: "Discrete Mathematics", unit: "Unit I", co: "CO1", bloom: "Understand", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Explain the conditions for an equivalence relation with examples of reflexivity, symmetry, and transitivity." },
+            { id: 11, subject: "Discrete Mathematics", unit: "Unit II", co: "CO2", bloom: "Apply", marks: 6, difficulty: "Medium", type: "Problem", text: "State and prove the Pigeonhole Principle with an application in counting distinct pairs." },
+            { id: 12, subject: "Discrete Mathematics", unit: "Unit II", co: "CO2", bloom: "Apply", marks: 10, difficulty: "Hard", type: "Problem", text: "Solve the linear recurrence relation a_n = 5a_{n-1} - 6a_{n-2} with initial conditions a_0 = 1 and a_1 = 4." },
+            { id: 13, subject: "Discrete Mathematics", unit: "Unit IV", co: "CO4", bloom: "Analyze", marks: 10, difficulty: "Medium", type: "Descriptive", text: "Explain Euler and Hamiltonian paths and circuits in connected undirected graphs with diagrams." },
+            { id: 14, subject: "Discrete Mathematics", unit: "Unit I", co: "CO1", bloom: "Apply", marks: 8, difficulty: "Easy", type: "Problem", text: "Prove by mathematical induction that 1 + 2 + ... + n = n(n+1)/2 for all positive integers n." },
+            { id: 15, subject: "Discrete Mathematics", unit: "Unit I", co: "CO1", bloom: "Analyze", marks: 7, difficulty: "Easy", type: "Problem", text: "Construct the truth table for (P -> Q) ^ (Q -> R) -> (P -> R) and determine whether it is a tautology." },
+            { id: 16, subject: "Discrete Mathematics", unit: "Unit V", co: "CO5", bloom: "Evaluate", marks: 12, difficulty: "Hard", type: "Descriptive", text: "Explain Dijkstra's algorithm for finding the minimal spanning tree versus Prim's and Kruskal's methods." },
+
+            // 3. Advanced Data Structures and Algorithms
+            { id: 17, subject: "Advanced Data Structures and Algorithms", unit: "Unit II", co: "CO2", bloom: "Apply", marks: 10, difficulty: "Hard", type: "Descriptive", text: "Explain the insertion and balancing operations in an AVL tree with rotation examples." },
+            { id: 18, subject: "Advanced Data Structures and Algorithms", unit: "Unit II", co: "CO2", bloom: "Apply", marks: 10, difficulty: "Hard", type: "Descriptive", text: "Describe how balance factors and tree rotations maintain height balance in AVL trees during insertion." },
+            { id: 19, subject: "Advanced Data Structures and Algorithms", unit: "Unit III", co: "CO3", bloom: "Analyze", marks: 12, difficulty: "Hard", type: "Problem", text: "Explain the 0/1 Knapsack problem using dynamic programming and analyze its time and space complexity." },
+            { id: 20, subject: "Advanced Data Structures and Algorithms", unit: "Unit II", co: "CO2", bloom: "Understand", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Describe the structural properties and node insertion rules of Red-Black Trees." },
+            { id: 21, subject: "Advanced Data Structures and Algorithms", unit: "Unit IV", co: "CO4", bloom: "Apply", marks: 10, difficulty: "Hard", type: "Problem", text: "Explain the Bellman-Ford algorithm for single-source shortest paths and how it detects negative weight cycles." },
+            { id: 22, subject: "Advanced Data Structures and Algorithms", unit: "Unit I", co: "CO1", bloom: "Understand", marks: 7, difficulty: "Medium", type: "Descriptive", text: "Describe the design and prefix search operations of a Trie data structure with a diagram." },
+            { id: 23, subject: "Advanced Data Structures and Algorithms", unit: "Unit V", co: "CO5", bloom: "Analyze", marks: 9, difficulty: "Medium", type: "Descriptive", text: "Compare B-Trees and B+ Trees in terms of record storage, search efficiency, and range queries." },
+            { id: 24, subject: "Advanced Data Structures and Algorithms", unit: "Unit I", co: "CO1", bloom: "Remember", marks: 6, difficulty: "Easy", type: "Short Answer", text: "Define asymptotic notations Big-O, Big-Omega, and Big-Theta with mathematical definitions and graphical interpretations." },
+
+            // 4. Embedded System Design
+            { id: 25, subject: "Embedded System Design", unit: "Unit I", co: "CO1", bloom: "Analyze", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Compare CISC and RISC architectures with respect to embedded microcontroller design and execution speed." },
+            { id: 26, subject: "Embedded System Design", unit: "Unit I", co: "CO1", bloom: "Analyze", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Explain the differences between RISC and CISC processors in embedded systems design and instruction sets." },
+            { id: 27, subject: "Embedded System Design", unit: "Unit III", co: "CO3", bloom: "Analyze", marks: 10, difficulty: "Medium", type: "Descriptive", text: "Explain the working and protocol timing of I2C and SPI serial communication buses in embedded hardware." },
+            { id: 28, subject: "Embedded System Design", unit: "Unit II", co: "CO2", bloom: "Understand", marks: 8, difficulty: "Hard", type: "Descriptive", text: "Describe Interrupt Service Routine (ISR) latency, interrupt priorities, and context switching in ARM microcontrollers." },
+            { id: 29, subject: "Embedded System Design", unit: "Unit II", co: "CO2", bloom: "Apply", marks: 8, difficulty: "Medium", type: "Problem", text: "Explain Pulse Width Modulation (PWM) generation and how it is used for DC motor speed control." },
+            { id: 30, subject: "Embedded System Design", unit: "Unit IV", co: "CO4", bloom: "Evaluate", marks: 10, difficulty: "Hard", type: "Descriptive", text: "Compare Rate Monotonic Scheduling (RMS) and Earliest Deadline First (EDF) in Real-Time Operating Systems (RTOS)." },
+            { id: 31, subject: "Embedded System Design", unit: "Unit V", co: "CO5", bloom: "Understand", marks: 6, difficulty: "Easy", type: "Short Answer", text: "Describe the purpose and fail-safe operation of a Watchdog Timer in mission-critical embedded systems." },
+            { id: 32, subject: "Embedded System Design", unit: "Unit I", co: "CO1", bloom: "Remember", marks: 7, difficulty: "Easy", type: "Descriptive", text: "Explain memory architectures for embedded systems: SRAM, DRAM, Flash, and EEPROM with power and speed trade-offs." },
+
+            // 5. Machine Learning Techniques
+            { id: 33, subject: "Machine Learning Techniques", unit: "Unit I", co: "CO1", bloom: "Understand", marks: 8, difficulty: "Easy", type: "Descriptive", text: "Explain the difference between supervised and unsupervised learning algorithms with real-world examples." },
+            { id: 34, subject: "Machine Learning Techniques", unit: "Unit I", co: "CO1", bloom: "Understand", marks: 8, difficulty: "Easy", type: "Descriptive", text: "Differentiate between supervised learning and unsupervised machine learning methods with appropriate use cases." },
+            { id: 35, subject: "Machine Learning Techniques", unit: "Unit II", co: "CO2", bloom: "Analyze", marks: 10, difficulty: "Hard", type: "Descriptive", text: "Explain the Bias-Variance tradeoff in machine learning and discuss how L1 (Lasso) and L2 (Ridge) regularization prevent overfitting." },
+            { id: 36, subject: "Machine Learning Techniques", unit: "Unit II", co: "CO2", bloom: "Understand", marks: 10, difficulty: "Medium", type: "Descriptive", text: "Describe Gradient Descent optimization algorithms: Batch Gradient Descent, Stochastic Gradient Descent (SGD), and Adam optimizer." },
+            { id: 37, subject: "Machine Learning Techniques", unit: "Unit III", co: "CO3", bloom: "Apply", marks: 8, difficulty: "Medium", type: "Problem", text: "Explain the K-Means clustering algorithm step-by-step and describe the Elbow method for choosing the optimal number of clusters K." },
+            { id: 38, subject: "Machine Learning Techniques", unit: "Unit III", co: "CO3", bloom: "Analyze", marks: 12, difficulty: "Hard", type: "Descriptive", text: "Illustrate the working of Support Vector Machines (SVM), the maximum margin hyperplane, and the kernel trick for non-linear classification." },
+            { id: 39, subject: "Machine Learning Techniques", unit: "Unit IV", co: "CO4", bloom: "Evaluate", marks: 10, difficulty: "Medium", type: "Descriptive", text: "Explain how Decision Trees calculate Information Gain and Gini Impurity, and how Random Forest ensembles reduce variance." },
+            { id: 40, subject: "Machine Learning Techniques", unit: "Unit V", co: "CO5", bloom: "Analyze", marks: 8, difficulty: "Medium", type: "Short Answer", text: "Define precision, recall, F1-score, and ROC-AUC curve with confusion matrix formulas for imbalanced classification evaluation." },
+
+            // 6. Object Oriented Programming using Java
+            { id: 41, subject: "Object Oriented Programming using Java", unit: "Unit II", co: "CO2", bloom: "Apply", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Explain runtime polymorphism and dynamic method dispatch in Java with code examples." },
+            { id: 42, subject: "Object Oriented Programming using Java", unit: "Unit II", co: "CO2", bloom: "Apply", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Describe method overriding and dynamic method dispatch and how runtime polymorphism is achieved in Java." },
+            { id: 43, subject: "Object Oriented Programming using Java", unit: "Unit I", co: "CO1", bloom: "Understand", marks: 10, difficulty: "Easy", type: "Descriptive", text: "Explain the four core principles of Object-Oriented Programming: Encapsulation, Inheritance, Polymorphism, and Abstraction." },
+            { id: 44, subject: "Object Oriented Programming using Java", unit: "Unit III", co: "CO3", bloom: "Understand", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Describe the Java Exception handling hierarchy and the difference between checked and unchecked exceptions with try-catch-finally." },
+            { id: 45, subject: "Object Oriented Programming using Java", unit: "Unit IV", co: "CO4", bloom: "Analyze", marks: 10, difficulty: "Medium", type: "Descriptive", text: "Compare ArrayList, LinkedList, and HashMap in the Java Collections Framework regarding internal implementation and performance." },
+            { id: 46, subject: "Object Oriented Programming using Java", unit: "Unit III", co: "CO3", bloom: "Analyze", marks: 10, difficulty: "Hard", type: "Problem", text: "Explain multithreading in Java: Thread lifecycle, thread synchronization using synchronized blocks, and inter-thread communication." },
+            { id: 47, subject: "Object Oriented Programming using Java", unit: "Unit II", co: "CO2", bloom: "Evaluate", marks: 8, difficulty: "Medium", type: "Descriptive", text: "Explain the differences between Abstract Classes and Interfaces in Java, including default and static methods introduced in Java 8." },
+            { id: 48, subject: "Object Oriented Programming using Java", unit: "Unit V", co: "CO5", bloom: "Understand", marks: 7, difficulty: "Easy", type: "Short Answer", text: "What are Java Generics? Explain how bounded type parameters and wildcards ensure compile-time type safety." }
+        ];
+
+        let questions = JSON.parse(localStorage.getItem('dup_questions') || 'null') || initialQuestions;
+        let selectedExamQuestions = { partA: [], partB: [] };
+
+        // Semantic Vector Cosine Calculation
+        function tokenize(text) {
+            return text.toLowerCase()
+                .replace(/[^a-z0-9\s]/g, ' ')
+                .split(/\s+/)
+                .filter(w => w.length > 2 && !["the","and","for","with","are","this","that","what","how","explain","describe"].includes(w));
+        }
+
+        function getVector(tokens) {
+            const map = {};
+            tokens.forEach(t => map[t] = (map[t] || 0) + 1);
+            return map;
+        }
+
+        function cosineSimilarity(v1, v2) {
+            let dot = 0, mag1 = 0, mag2 = 0;
+            for (let k in v1) {
+                if (v2[k]) dot += v1[k] * v2[k];
+                mag1 += v1[k] * v1[k];
+            }
+            for (let k in v2) {
+                mag2 += v2[k] * v2[k];
+            }
+            if (mag1 === 0 || mag2 === 0) return 0;
+            return dot / (Math.sqrt(mag1) * Math.sqrt(mag2));
+        }
+
+        function runAiCheck() {
+            const input = document.getElementById('aiInput').value.trim();
+            const subject = document.getElementById('aiSubject').value;
+            if (!input) {
+                alert("Please enter question text to analyze.");
+                return;
+            }
+
+            const inputTokens = tokenize(input);
+            const inputVector = getVector(inputTokens);
+
+            let bestMatch = null;
+            let highestSim = 0;
+
+            const pool = subject ? questions.filter(q => q.subject === subject) : questions;
+
+            pool.forEach(q => {
+                const qTokens = tokenize(q.text);
+                const qVector = getVector(qTokens);
+                const sim = cosineSimilarity(inputVector, qVector);
+                if (sim > highestSim) {
+                    highestSim = sim;
+                    bestMatch = q;
+                }
+            });
+
+            const score = (highestSim * 100).toFixed(1);
+            document.getElementById('aiEmptyState').style.display = 'none';
+            document.getElementById('aiOutput').style.display = 'block';
+            document.getElementById('aiPercentage').innerText = score + "%";
+            document.getElementById('aiGaugeBar').style.width = score + "%";
+
+            const badge = document.getElementById('aiBadge');
+            const alertBox = document.getElementById('aiAlertBox');
+            const gaugeBar = document.getElementById('aiGaugeBar');
+            const recText = document.getElementById('aiRecommendationText');
+
+            if (highestSim >= 0.85) {
+                badge.className = "badge bg-danger px-3 py-2 fs-6 rounded-pill";
+                badge.innerText = "HIGHLY SIMILAR / DUPLICATE";
+                alertBox.className = "alert alert-danger p-3 rounded-3";
+                gaugeBar.className = "similarity-fill bg-danger";
+                recText.innerText = "High semantic overlap detected (> 85%). This question strongly resembles an existing question in the bank.";
+            } else if (highestSim >= 0.70) {
+                badge.className = "badge bg-warning text-dark px-3 py-2 fs-6 rounded-pill";
+                badge.innerText = "SIMILAR / REVIEW REQUIRED";
+                alertBox.className = "alert alert-warning p-3 rounded-3";
+                gaugeBar.className = "similarity-fill bg-warning";
+                recText.innerText = "Moderate similarity detected (70% - 84%). Faculty review recommended before inclusion.";
+            } else {
+                badge.className = "badge bg-success px-3 py-2 fs-6 rounded-pill";
+                badge.innerText = "UNIQUE QUESTION";
+                alertBox.className = "alert alert-success p-3 rounded-3";
+                gaugeBar.className = "similarity-fill bg-success";
+                recText.innerText = "The question appears to be unique. No significant semantic duplication found.";
+            }
+
+            if (bestMatch) {
+                document.getElementById('aiMatchedCard').style.display = 'block';
+                document.getElementById('aiMatchedSubject').innerText = bestMatch.subject + " (" + bestMatch.unit + ")";
+                document.getElementById('aiMatchedText').innerText = bestMatch.text;
+            } else {
+                document.getElementById('aiMatchedCard').style.display = 'none';
+            }
+        }
+
+        const samples = {
+            1: { subject: "Computer Networks", text: "Describe how congestion control is handled in TCP." },
+            2: { subject: "Machine Learning Techniques", text: "Differentiate between supervised learning and unsupervised machine learning methods with appropriate use cases." },
+            3: { subject: "Computer Networks", text: "Explain quantum computing qubit superposition and entanglement gates." }
+        };
+
+        function loadSample(id) {
+            const s = samples[id];
+            if (s) {
+                document.getElementById('aiSubject').value = s.subject;
+                document.getElementById('aiInput').value = s.text;
+                runAiCheck();
+            }
+        }
+
+        function renderRecentQuestions() {
+            const tbody = document.getElementById('recentQuestionsTbody');
+            const recent = questions.slice(0, 5);
+            tbody.innerHTML = recent.map(q => `
+                <tr>
+                    <td><span class="badge bg-light text-dark border">${q.subject}</span></td>
+                    <td>${q.unit}</td>
+                    <td class="fw-medium">${q.text}</td>
+                    <td><span class="badge badge-co">${q.co}</span></td>
+                    <td><span class="badge badge-bloom">${q.bloom}</span></td>
+                    <td><span class="fw-bold">${q.marks}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderQuestionBank() {
+            const tbody = document.getElementById('bankTbody');
+            const search = document.getElementById('bankSearch').value.toLowerCase();
+            const subject = document.getElementById('bankSubjectFilter').value;
+
+            const filtered = questions.filter(q => {
+                const matchSearch = !search || q.text.toLowerCase().includes(search) || q.subject.toLowerCase().includes(search);
+                const matchSubject = !subject || q.subject === subject;
+                return matchSearch && matchSubject;
+            });
+
+            document.getElementById('totalBadgeCount').innerText = filtered.length;
+
+            tbody.innerHTML = filtered.map((q, idx) => `
+                <tr>
+                    <td class="text-muted fw-bold">${idx + 1}</td>
+                    <td>
+                        <div class="fw-bold text-dark">${q.subject}</div>
+                        <small class="text-muted">${q.unit}</small>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-dark">${q.text}</div>
+                        <small class="text-muted">${q.type}</small>
+                    </td>
+                    <td><span class="badge badge-co">${q.co}</span></td>
+                    <td><span class="badge badge-bloom">${q.bloom}</span></td>
+                    <td><span class="fw-bold text-dark">${q.marks}</span></td>
+                    <td><span class="badge ${q.difficulty === 'Hard' ? 'bg-danger-subtle text-danger' : q.difficulty === 'Medium' ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success'}">${q.difficulty}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function handleAddQuestion(e) {
+            e.preventDefault();
+            const newQ = {
+                id: questions.length + 1,
+                subject: document.getElementById('addSubject').value,
+                unit: document.getElementById('addUnit').value,
+                co: document.getElementById('addCO').value,
+                bloom: document.getElementById('addBloom').value,
+                marks: parseInt(document.getElementById('addMarks').value) || 8,
+                difficulty: document.getElementById('addDifficulty').value,
+                type: "Descriptive",
+                text: document.getElementById('addText').value.trim()
+            };
+            questions.unshift(newQ);
+            localStorage.setItem('dup_questions', JSON.stringify(questions));
+            document.getElementById('kpiTotalQuestions').innerText = questions.length;
+            renderQuestionBank();
+            renderRecentQuestions();
+            alert("Question successfully added to curriculum question bank!");
+            showTab('#questions-tab');
+        }
+
+        function renderPaperBuilder() {
+            const subject = document.getElementById('paperSubject').value;
+            const sourceList = document.getElementById('paperSourceList');
+            const available = questions.filter(q => q.subject === subject);
+
+            sourceList.innerHTML = available.map(q => `
+                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-2 border-bottom">
+                    <div class="me-2">
+                        <span class="fw-semibold text-dark d-block">${q.text}</span>
+                        <small class="text-muted">${q.unit} | ${q.co} | ${q.marks} Marks | ${q.difficulty}</small>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-xs btn-outline-primary py-0 px-2" onclick="addToExam(${q.id}, 'partA')">+ Part A</button>
+                        <button class="btn btn-xs btn-outline-secondary py-0 px-2" onclick="addToExam(${q.id}, 'partB')">+ Part B</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addToExam(id, part) {
+            const q = questions.find(item => item.id === id);
+            if (!q) return;
+            selectedExamQuestions[part].push(q);
+            updateExamSectionLists();
+        }
+
+        function updateExamSectionLists() {
+            const pA = document.getElementById('partAList');
+            const pB = document.getElementById('partBList');
+            let marks = 0;
+
+            if (selectedExamQuestions.partA.length === 0) {
+                pA.innerHTML = '<span class="text-muted small">No questions in Part A.</span>';
+            } else {
+                pA.innerHTML = `<ol class="mb-0 ps-3">${selectedExamQuestions.partA.map(q => { marks += q.marks; return `<li class="py-1">${q.text} (${q.marks}M)</li>`; }).join('')}</ol>`;
+            }
+
+            if (selectedExamQuestions.partB.length === 0) {
+                pB.innerHTML = '<span class="text-muted small">No questions in Part B.</span>';
+            } else {
+                pB.innerHTML = `<ol class="mb-0 ps-3">${selectedExamQuestions.partB.map(q => { marks += q.marks; return `<li class="py-1">${q.text} (${q.marks}M)</li>`; }).join('')}</ol>`;
+            }
+
+            document.getElementById('totalMarksBadge').innerText = `Total Marks: ${marks} / 100`;
+        }
+
+        function generateAndPrintPaper() {
+            document.getElementById('printModalSubj').innerText = "Subject: " + document.getElementById('paperSubject').value;
+            document.getElementById('printModalTitle').innerText = document.getElementById('paperTitle').value;
+            
+            const paList = selectedExamQuestions.partA.length ? selectedExamQuestions.partA : questions.filter(q => q.subject === document.getElementById('paperSubject').value).slice(0, 5);
+            const pbList = selectedExamQuestions.partB.length ? selectedExamQuestions.partB : questions.filter(q => q.subject === document.getElementById('paperSubject').value).slice(2, 6);
+
+            document.getElementById('printPartA').innerHTML = paList.map(q => `<li class="mb-2">${q.text} <span class="float-end fw-bold">[2 Marks]</span></li>`).join('');
+            document.getElementById('printPartB').innerHTML = pbList.map(q => `<li class="mb-3">${q.text} <span class="float-end fw-bold">[10 Marks]</span></li>`).join('');
+
+            const modal = new bootstrap.Modal(document.getElementById('printModal'));
+            modal.show();
+        }
+
+        function showTab(selector) {
+            const triggerEl = document.querySelector(`[data-bs-target="${selector}"]`);
+            if (triggerEl) bootstrap.Tab.getInstance(triggerEl)?.show() || new bootstrap.Tab(triggerEl).show();
+        }
+
+        // Initialize Charts
+        window.addEventListener('DOMContentLoaded', () => {
+            renderRecentQuestions();
+            renderQuestionBank();
+            renderPaperBuilder();
+
+            // Subjects Bar Chart
+            new Chart(document.getElementById('chartSubjects'), {
+                type: 'bar',
+                data: {
+                    labels: ['Discrete Math', 'Comp Networks', 'Adv DSA', 'Embedded Sys', 'Machine Learning', 'Java OOP'],
+                    datasets: [{
+                        label: 'Questions Banked',
+                        data: [8, 8, 8, 8, 8, 8],
+                        backgroundColor: '#2563eb',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 12 } }
+                }
+            });
+
+            // Bloom's Doughnut Chart
+            new Chart(document.getElementById('chartBloom'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Understand', 'Apply', 'Analyze', 'Remember', 'Evaluate'],
+                    datasets: [{
+                        data: [18, 14, 10, 4, 2],
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
