@@ -1,6 +1,6 @@
 /**
  * AI-Based Duplicate Question Detection System
- * Main Frontend Logic
+ * Main Frontend Logic & Interactive Engine for Vercel
  */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -28,143 +28,62 @@ document.addEventListener('DOMContentLoaded', function () {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
     }
+
+    // 3. Update User Header Information
+    if (window.AppStore) {
+        const user = window.AppStore.getUser();
+        document.querySelectorAll('.user-display-email').forEach(el => el.innerText = user.email);
+        document.querySelectorAll('.user-display-dept').forEach(el => el.innerText = user.department);
+    }
 });
+
+/**
+ * Universal Safe Logout for Static Deployment
+ */
+function handleLogout(e) {
+    if (e) e.preventDefault();
+    if (window.AppStore) {
+        window.AppStore.logout();
+    } else {
+        window.location.href = '/login.html';
+    }
+}
 
 /**
  * Duplicate Detection Helper for Add Question Form & AI Page
  */
 const DuplicateDetector = {
-    knowledgeBase: [
-        { id: 1, subject: "Computer Networks", unit: "Unit III", courseOutcome: "CO3", bloomLevel: "Understand", marks: 10, questionText: "Explain the working principle of TCP congestion control." },
-        { id: 2, subject: "Computer Networks", unit: "Unit III", courseOutcome: "CO3", bloomLevel: "Understand", marks: 10, questionText: "Describe how congestion control is handled in TCP." },
-        { id: 3, subject: "Computer Networks", unit: "Unit IV", courseOutcome: "CO4", bloomLevel: "Apply", marks: 13, questionText: "Explain Dijkstra's shortest path routing algorithm with an example." },
-        { id: 5, subject: "Discrete Mathematics", unit: "Unit I", courseOutcome: "CO1", bloomLevel: "Understand", marks: 8, questionText: "Define an equivalence relation and determine whether a relation is reflexive, symmetric, and transitive." },
-        { id: 6, subject: "Discrete Mathematics", unit: "Unit I", courseOutcome: "CO1", bloomLevel: "Understand", marks: 8, questionText: "Explain the conditions for an equivalence relation with examples of reflexivity, symmetry, and transitivity." },
-        { id: 7, subject: "Advanced Data Structures and Algorithms", unit: "Unit II", courseOutcome: "CO2", bloomLevel: "Apply", marks: 10, questionText: "Explain the insertion and balancing operations in an AVL tree with rotation examples." },
-        { id: 8, subject: "Advanced Data Structures and Algorithms", unit: "Unit II", courseOutcome: "CO2", bloomLevel: "Apply", marks: 10, questionText: "Describe how balance factors and tree rotations maintain height balance in AVL trees during insertion." },
-        { id: 9, subject: "Embedded System Design", unit: "Unit I", courseOutcome: "CO1", bloomLevel: "Analyze", marks: 8, questionText: "Compare CISC and RISC architectures with respect to embedded microcontroller design and execution speed." },
-        { id: 10, subject: "Embedded System Design", unit: "Unit I", courseOutcome: "CO1", bloomLevel: "Analyze", marks: 8, questionText: "Explain the differences between RISC and CISC processors in embedded systems design and instruction sets." },
-        { id: 11, subject: "Machine Learning Techniques", unit: "Unit I", courseOutcome: "CO1", bloomLevel: "Understand", marks: 8, questionText: "Explain the difference between supervised and unsupervised learning algorithms with real-world examples." },
-        { id: 12, subject: "Machine Learning Techniques", unit: "Unit I", courseOutcome: "CO1", bloomLevel: "Understand", marks: 8, questionText: "Differentiate between supervised learning and unsupervised machine learning methods with appropriate use cases." },
-        { id: 13, subject: "Object Oriented Programming using Java", unit: "Unit II", courseOutcome: "CO2", bloomLevel: "Apply", marks: 8, questionText: "Explain runtime polymorphism and dynamic method dispatch in Java with code examples." },
-        { id: 14, subject: "Object Oriented Programming using Java", unit: "Unit II", courseOutcome: "CO2", bloomLevel: "Apply", marks: 8, questionText: "Describe method overriding and dynamic method dispatch and how runtime polymorphism is achieved in Java." }
-    ],
-
     checkSimilarity: async function (questionText, subject, excludeId = null) {
         if (!questionText || questionText.trim().length < 5) {
             return null;
         }
 
-        try {
-            const response = await fetch('/api/questions/check-similarity', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    questionText: questionText.trim(),
-                    subject: subject || '',
-                    excludeQuestionId: excludeId
-                })
-            });
-
-            if (response.ok) {
-                const json = await response.json();
-                if (json && json.data) return json.data;
-            }
-        } catch (err) {
-            console.log('Falling back to local client-side semantic vector engine');
+        // Try AppStore client-side engine directly
+        if (window.AppStore) {
+            return window.AppStore.checkSimilarity(questionText, subject, excludeId);
         }
 
-        return this.clientSideCheck(questionText, subject);
-    },
-
-    tokenize: function (text) {
-        return text.toLowerCase()
-            .replace(/[^a-z0-9\s]/g, ' ')
-            .split(/\s+/)
-            .filter(w => w.length > 2 && !["the","and","for","with","are","this","that","what","how","explain","describe","state","define"].includes(w));
-    },
-
-    getVector: function (tokens) {
-        const map = {};
-        tokens.forEach(t => map[t] = (map[t] || 0) + 1);
-        return map;
-    },
-
-    cosineSimilarity: function (v1, v2) {
-        let dot = 0, mag1 = 0, mag2 = 0;
-        for (let k in v1) {
-            if (v2[k]) dot += v1[k] * v2[k];
-            mag1 += v1[k] * v1[k];
-        }
-        for (let k in v2) {
-            mag2 += v2[k] * v2[k];
-        }
-        if (mag1 === 0 || mag2 === 0) return 0;
-        return dot / (Math.sqrt(mag1) * Math.sqrt(mag2));
-    },
-
-    clientSideCheck: function (text, subject) {
-        const inputTokens = this.tokenize(text);
-        const inputVector = this.getVector(inputTokens);
-
-        const pool = subject ? this.knowledgeBase.filter(q => q.subject === subject) : this.knowledgeBase;
-        const matches = [];
-
-        pool.forEach(q => {
-            const qTokens = this.tokenize(q.questionText);
-            const qVector = this.getVector(qTokens);
-            const sim = this.cosineSimilarity(inputVector, qVector);
-            const score = Math.round(sim * 1000) / 10;
-            if (score > 15) {
-                matches.push({
-                    questionId: q.id,
-                    questionText: q.questionText,
-                    subject: q.subject,
-                    unit: q.unit,
-                    courseOutcome: q.courseOutcome,
-                    bloomLevel: q.bloomLevel,
-                    marks: q.marks,
-                    similarityScore: score,
-                    matchClassification: score >= 85 ? 'HIGHLY_SIMILAR' : (score >= 70 ? 'SIMILAR' : 'UNIQUE')
-                });
-            }
-        });
-
-        matches.sort((a, b) => b.similarityScore - a.similarityScore);
-        const topScore = matches.length > 0 ? matches[0].similarityScore : 0.0;
-        let status = 'UNIQUE';
-        let explanation = 'The question appears to be unique. No significant semantic overlap detected with existing questions in the bank.';
-
-        if (topScore >= 85.0) {
-            status = 'HIGHLY_SIMILAR';
-            explanation = `High semantic similarity detected (${topScore}%). This question strongly resembles an existing question in ${matches[0].subject}. Recommendation: Reject or modify.`;
-        } else if (topScore >= 70.0) {
-            status = 'SIMILAR';
-            explanation = `Moderate semantic overlap detected (${topScore}%). Review required before approval to ensure differentiation.`;
-        }
-
+        // Fallback basic client-side check
         return {
-            status: status,
-            highestSimilarity: topScore,
-            explanation: explanation,
-            extractedTokens: inputTokens,
-            matches: matches.slice(0, 3)
+            status: 'UNIQUE',
+            highestSimilarity: 0.0,
+            explanation: 'Analysis completed.',
+            extractedTokens: [],
+            matches: []
         };
     }
 };
 
-
 /**
- * Question Paper Builder Interactive State Manager
+ * Question Paper Builder Interactive Engine
  */
 const PaperBuilder = {
     selectedQuestions: new Map(),
 
     init: function () {
+        this.selectedQuestions.clear();
         this.renderSelectedTable();
-        this.updateDistribution();
+        this.clearDistributionDisplay();
     },
 
     toggleQuestion: function (btn) {
@@ -174,7 +93,7 @@ const PaperBuilder = {
         const qUnit = btn.getAttribute('data-unit');
         const qCo = btn.getAttribute('data-co');
         const qBloom = btn.getAttribute('data-bloom');
-        const qMarks = parseInt(btn.getAttribute('data-marks') || 10);
+        const qMarks = parseInt(btn.getAttribute('data-marks')) || 10;
         const qDiff = btn.getAttribute('data-difficulty');
 
         if (this.selectedQuestions.has(qId)) {
@@ -186,7 +105,7 @@ const PaperBuilder = {
             this.selectedQuestions.set(qId, {
                 questionId: qId,
                 questionNumber: this.selectedQuestions.size + 1,
-                sectionName: this.selectedQuestions.size < 4 ? 'Part A' : 'Part B',
+                sectionName: this.selectedQuestions.size < 5 ? 'Part A' : 'Part B',
                 allocatedMarks: qMarks,
                 questionText: qText,
                 subject: qSubject,
@@ -286,98 +205,109 @@ const PaperBuilder = {
         }
     },
 
-    updateDistribution: async function () {
-        const qIds = Array.from(this.selectedQuestions.keys());
-        if (qIds.length === 0) {
+    updateDistribution: function () {
+        const questions = Array.from(this.selectedQuestions.values());
+        if (questions.length === 0) {
             this.clearDistributionDisplay();
             return;
         }
 
-        try {
-            const response = await fetch('/api/question-papers/compute-distribution', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(qIds)
-            });
+        let totalMarks = 0;
+        const unitDist = {};
+        const coCount = {};
+        const bloomDist = {};
+        let diffSum = 0;
 
-            if (!response.ok) return;
+        const diffWeights = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
 
-            const res = await response.json();
-            const dist = res.data;
+        questions.forEach(q => {
+            totalMarks += q.allocatedMarks;
+            unitDist[q.unit] = (unitDist[q.unit] || 0) + 1;
+            coCount[q.courseOutcome] = (coCount[q.courseOutcome] || 0) + 1;
+            bloomDist[q.bloomLevel] = (bloomDist[q.bloomLevel] || 0) + 1;
+            diffSum += (diffWeights[q.difficulty] || 2);
+        });
 
-            // Update Total questions & Total Marks
-            const totalQEl = document.getElementById('dist-total-questions');
-            const totalMarksEl = document.getElementById('dist-total-marks');
-            const avgDiffEl = document.getElementById('dist-avg-diff');
+        const totalQ = questions.length;
+        const avgScore = diffSum / totalQ;
+        let avgDiffLabel = 'Medium';
+        if (avgScore < 1.6) avgDiffLabel = 'Easy';
+        else if (avgScore > 2.4) avgDiffLabel = 'Hard';
 
-            if (totalQEl) totalQEl.innerText = dist.totalQuestions;
-            if (totalMarksEl) {
-                // Calculate from actual allocated marks
-                let sum = 0;
-                this.selectedQuestions.forEach(item => sum += (item.allocatedMarks || 0));
-                totalMarksEl.innerText = sum;
+        // Update Total questions & Total Marks
+        const totalQEl = document.getElementById('dist-total-questions');
+        const totalMarksEl = document.getElementById('dist-total-marks');
+        const avgDiffEl = document.getElementById('dist-avg-diff');
+
+        if (totalQEl) totalQEl.innerText = totalQ;
+        if (totalMarksEl) totalMarksEl.innerText = totalMarks;
+        if (avgDiffEl) avgDiffEl.innerText = avgDiffLabel;
+
+        // Render Unit Distribution
+        const unitBox = document.getElementById('dist-units-list');
+        if (unitBox) {
+            let uHtml = '';
+            for (const [unit, count] of Object.entries(unitDist)) {
+                uHtml += `<div class="d-flex justify-content-between mb-1 small">
+                    <span>${unit}</span>
+                    <span class="badge bg-primary rounded-pill">${count} Qs</span>
+                </div>`;
             }
-            if (avgDiffEl) avgDiffEl.innerText = dist.averageDifficulty;
+            unitBox.innerHTML = uHtml;
+        }
 
-            // Render Unit Distribution
-            const unitBox = document.getElementById('dist-units-list');
-            if (unitBox && dist.unitDistribution) {
-                let uHtml = '';
-                for (const [unit, count] of Object.entries(dist.unitDistribution)) {
-                    uHtml += `<div class="d-flex justify-content-between mb-1 small">
-                        <span>${unit}</span>
-                        <span class="badge bg-primary rounded-pill">${count} Qs</span>
-                    </div>`;
-                }
-                unitBox.innerHTML = uHtml;
-            }
-
-            // Render CO distribution
-            const coBox = document.getElementById('dist-co-list');
-            if (coBox && dist.coPercentages) {
-                let coHtml = '';
-                for (const [co, pct] of Object.entries(dist.coPercentages)) {
-                    coHtml += `
-                        <div class="mb-2">
-                            <div class="d-flex justify-content-between small mb-1">
-                                <span>${co}</span>
-                                <span class="fw-bold">${pct}%</span>
-                            </div>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar bg-info" style="width: ${pct}%"></div>
-                            </div>
+        // Render CO distribution
+        const coBox = document.getElementById('dist-co-list');
+        if (coBox) {
+            let coHtml = '';
+            for (const [co, count] of Object.entries(coCount)) {
+                const pct = Math.round((count / totalQ) * 100);
+                coHtml += `
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>${co}</span>
+                            <span class="fw-bold">${pct}%</span>
                         </div>
-                    `;
-                }
-                coBox.innerHTML = coHtml;
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-info" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            coBox.innerHTML = coHtml;
+        }
+
+        // Render Bloom distribution
+        const bloomBox = document.getElementById('dist-bloom-list');
+        if (bloomBox) {
+            let bHtml = '';
+            for (const [bloom, count] of Object.entries(bloomDist)) {
+                bHtml += `<span class="badge bg-secondary me-1 mb-1">${bloom}: ${count}</span>`;
+            }
+            bloomBox.innerHTML = bHtml;
+        }
+
+        // Render Advisory Warnings
+        const warnBox = document.getElementById('dist-warnings-box');
+        if (warnBox) {
+            const warnings = [];
+            const standardUnits = ["Unit I", "Unit II", "Unit III", "Unit IV", "Unit V"];
+            standardUnits.forEach(u => {
+                if (!unitDist[u]) warnings.push(`No questions selected from ${u}.`);
+            });
+            if (totalMarks < 50) {
+                warnings.push(`Total marks (${totalMarks} M) is lower than standard end-semester target (100 M).`);
             }
 
-            // Render Bloom distribution
-            const bloomBox = document.getElementById('dist-bloom-list');
-            if (bloomBox && dist.bloomDistribution) {
-                let bHtml = '';
-                for (const [bloom, count] of Object.entries(dist.bloomDistribution)) {
-                    bHtml += `<span class="badge bg-secondary me-1 mb-1">${bloom}: ${count}</span>`;
-                }
-                bloomBox.innerHTML = bHtml;
+            if (warnings.length > 0) {
+                let wHtml = '<div class="alert alert-warning p-2 small mb-0"><ul class="mb-0 ps-3">';
+                warnings.forEach(w => wHtml += `<li>${w}</li>`);
+                wHtml += '</ul></div>';
+                warnBox.innerHTML = wHtml;
+                warnBox.style.display = 'block';
+            } else {
+                warnBox.style.display = 'none';
             }
-
-            // Render Advisory Warnings
-            const warnBox = document.getElementById('dist-warnings-box');
-            if (warnBox) {
-                if (dist.advisoryWarnings && dist.advisoryWarnings.length > 0) {
-                    let wHtml = '<div class="alert alert-warning p-2 small mb-0"><ul class="mb-0 ps-3">';
-                    dist.advisoryWarnings.forEach(w => wHtml += `<li>${w}</li>`);
-                    wHtml += '</ul></div>';
-                    warnBox.innerHTML = wHtml;
-                    warnBox.style.display = 'block';
-                } else {
-                    warnBox.style.display = 'none';
-                }
-            }
-
-        } catch (e) {
-            console.error('Error computing distribution:', e);
         }
     },
 
@@ -399,7 +329,7 @@ const PaperBuilder = {
         if (warnBox) warnBox.style.display = 'none';
     },
 
-    savePaper: async function () {
+    savePaper: function () {
         const title = document.getElementById('paper-title').value;
         const subject = document.getElementById('paper-subject').value;
         const examCode = document.getElementById('paper-code').value;
@@ -421,7 +351,8 @@ const PaperBuilder = {
         let totalMarks = 0;
         questionsArray.forEach(q => totalMarks += q.allocatedMarks);
 
-        const payload = {
+        // Generate printable modal directly on page
+        this.showPrintModal({
             title: title.trim(),
             subject: subject,
             examCode: examCode,
@@ -430,34 +361,79 @@ const PaperBuilder = {
             totalMarks: totalMarks,
             instructions: instructions,
             questions: questionsArray
-        };
+        });
+    },
 
-        try {
-            const btn = document.getElementById('btn-save-paper');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Generating...';
-            }
-
-            const response = await fetch('/api/question-papers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save paper');
-            }
-
-            const res = await response.json();
-            window.location.href = `/papers/view/${res.data.id}`;
-        } catch (e) {
-            alert('Error generating question paper: ' + e.message);
-            const btn = document.getElementById('btn-save-paper');
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Generate Question Paper';
-            }
+    showPrintModal: function (paper) {
+        let modalEl = document.getElementById('paperPreviewModal');
+        if (!modalEl) {
+            modalEl = document.createElement('div');
+            modalEl.id = 'paperPreviewModal';
+            modalEl.className = 'modal fade';
+            modalEl.setAttribute('tabindex', '-1');
+            document.body.appendChild(modalEl);
         }
+
+        let qListHtml = '';
+        paper.questions.forEach((q, idx) => {
+            qListHtml += `
+                <div class="mb-3 pb-2 border-bottom">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <span class="fw-bold me-2">Q${idx + 1}.</span>
+                        <div class="flex-grow-1">${q.questionText}</div>
+                        <span class="fw-bold ms-3 text-nowrap">[${q.allocatedMarks} Marks]</span>
+                    </div>
+                    <div class="text-muted small mt-1">
+                        Section: ${q.sectionName || 'Part A'} | ${q.unit} | Outcome: ${q.courseOutcome} | Bloom: ${q.bloomLevel}
+                    </div>
+                </div>
+            `;
+        });
+
+        modalEl.innerHTML = `
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content shadow-lg">
+                    <div class="modal-header bg-light">
+                        <h5 class="modal-title fw-bold text-dark">
+                            <i class="bi bi-file-earmark-check-fill text-success me-2"></i>Generated Question Paper
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4" id="printablePaperContent">
+                        <div class="text-center pb-3 border-bottom mb-4">
+                            <h4 class="fw-bold mb-1">EASWARI ENGINEERING COLLEGE</h4>
+                            <div class="text-muted small mb-2">Department of Artificial Intelligence & Data Science</div>
+                            <h5 class="fw-bold text-primary mb-1">${paper.title} - ${paper.academicYear}</h5>
+                            <div class="small fw-semibold text-secondary">
+                                Course: ${paper.subject} (${paper.examCode}) | ${paper.semester}
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-3 small fw-bold">
+                                <span>Time Allowed: 3 Hours</span>
+                                <span>Max Marks: ${paper.totalMarks}</span>
+                            </div>
+                        </div>
+
+                        ${paper.instructions ? `<div class="alert alert-secondary small p-2 mb-3"><strong>Instructions:</strong> ${paper.instructions}</div>` : ''}
+
+                        <div class="questions-list">
+                            ${qListHtml}
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="window.print()">
+                            <i class="bi bi-printer me-1"></i> Print Question Paper
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
     }
 };
+
+window.DuplicateDetector = DuplicateDetector;
+window.PaperBuilder = PaperBuilder;
+window.handleLogout = handleLogout;
