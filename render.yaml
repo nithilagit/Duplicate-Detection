@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: duplicate-question-detection
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: SPRING_PROFILES_ACTIVE
+        value: dev
