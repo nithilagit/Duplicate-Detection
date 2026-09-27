@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/login.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/questions", "destination": "/questions.html" },
+    { "source": "/questions/add", "destination": "/add.html" },
+    { "source": "/ai/detect", "destination": "/detect.html" },
+    { "source": "/papers/builder", "destination": "/builder.html" },
+    { "source": "/papers", "destination": "/builder.html" },
+    { "source": "/reports", "destination": "/dashboard.html" },
+    { "source": "/profile", "destination": "/profile.html" }
+  ]
+}
