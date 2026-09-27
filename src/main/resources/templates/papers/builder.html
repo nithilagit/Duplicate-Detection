@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}"></head>
+<body>
+
+<div th:replace="~{layout/base :: html(content=~{::content_fragment}, scripts=~{::scripts_fragment})}">
+    <th:block th:fragment="content_fragment">
+        <!-- Page Header -->
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a th:href="@{/dashboard}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/papers}">Question Papers</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Builder</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-file-earmark-ruled-fill text-primary me-2"></i>Question Paper Builder
+            </h3>
+            <p class="text-secondary small mb-0">Select and balance examination questions with live Unit, Course Outcome (CO), and Bloom's Taxonomy distribution tracking.</p>
+        </div>
+
+        <!-- Paper Metadata Setup Card -->
+        <div class="card card-academic p-4 mb-4 shadow-sm">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-card-heading text-primary me-2"></i>Examination Metadata</h6>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-dark">Paper Title <span class="text-danger">*</span></label>
+                    <input type="text" id="paper-title" class="form-control form-control-sm" 
+                           placeholder="e.g. Mid-Term Examination" value="End-Semester Examination">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-dark">Subject <span class="text-danger">*</span></label>
+                    <select id="paper-subject" class="form-select form-select-sm" onchange="loadQuestionsForSubject()">
+                        <option th:each="s : ${subjects}" th:value="${s}" th:text="${s}"></option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-dark">Exam Code</label>
+                    <input type="text" id="paper-code" class="form-control form-control-sm" 
+                           placeholder="e.g. CS-501" value="CS-501">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-dark">Academic Year <span class="text-danger">*</span></label>
+                    <input type="text" id="paper-year" class="form-control form-control-sm" 
+                           placeholder="e.g. 2024-2025" value="2024-2025">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-dark">Semester <span class="text-danger">*</span></label>
+                    <select id="paper-semester" class="form-select form-select-sm">
+                        <option value="Semester I">Semester I</option>
+                        <option value="Semester II">Semester II</option>
+                        <option value="Semester III">Semester III</option>
+                        <option value="Semester IV">Semester IV</option>
+                        <option value="Semester V" selected>Semester V</option>
+                        <option value="Semester VI">Semester VI</option>
+                        <option value="Semester VII">Semester VII</option>
+                        <option value="Semester VIII">Semester VIII</option>
+                    </select>
+                </div>
+
+                <div class="col-md-9">
+                    <label class="form-label small fw-bold text-dark">General Instructions to Candidates</label>
+                    <input type="text" id="paper-instructions" class="form-control form-control-sm" 
+                           value="Answer all questions from Part A. Answer any four questions from Part B. Draw neat diagrams where necessary.">
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Column: Available Questions Repository -->
+            <div class="col-lg-7">
+                <div class="card card-academic p-3 shadow-sm h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-stack text-secondary me-2"></i>Select Questions from Bank
+                        </h6>
+                        <div class="d-flex gap-2">
+                            <select id="filterUnitSelect" class="form-select form-select-sm" style="width: 130px;" onchange="filterAvailableQuestions()">
+                                <option value="">All Units</option>
+                                <option th:each="u : ${units}" th:value="${u}" th:text="${u}"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="questionsRepositoryList" class="d-flex flex-column gap-2" style="max-height: 580px; overflow-y: auto;">
+                        <div class="text-center py-5 text-muted">
+                            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                            <div class="small">Loading questions repository...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Selected Questions & Real-Time Distributions -->
+            <div class="col-lg-5">
+                <!-- Selected Questions Table -->
+                <div class="card card-academic p-3 mb-4 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-check2-square text-success me-2"></i>Selected Questions
+                        </h6>
+                        <span id="selected-count-badge" class="badge bg-primary rounded-pill">0</span>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th style="width: 30px;">#</th>
+                                    <th>Question</th>
+                                    <th>Section</th>
+                                    <th>Marks</th>
+                                    <th class="text-end"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="selected-questions-tbody"></tbody>
+                        </table>
+                        <div id="empty-selection-alert" class="text-center py-4 text-muted small">
+                            No questions selected. Click "+ Add" on questions from the left list.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Distribution Analytics Panel -->
+                <div class="card card-academic p-3 shadow-sm">
+                    <h6 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-pie-chart-fill text-info me-2"></i>Live Balance & Outcome Mapping
+                    </h6>
+
+                    <!-- Summary KPIs -->
+                    <div class="row g-2 mb-3 text-center">
+                        <div class="col-4">
+                            <div class="p-2 border rounded-2 bg-light">
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">QUESTIONS</small>
+                                <span class="fw-bold fs-5 text-dark" id="dist-total-questions">0</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded-2 bg-light">
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">TOTAL MARKS</small>
+                                <span class="fw-bold fs-5 text-primary" id="dist-total-marks">0</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded-2 bg-light">
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">DIFFICULTY</small>
+                                <span class="fw-bold small text-dark d-block mt-1" id="dist-avg-diff">N/A</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Unit Distribution -->
+                    <div class="mb-3">
+                        <div class="small fw-bold text-dark mb-1">Unit Distribution:</div>
+                        <div id="dist-units-list">
+                            <span class="text-muted small">No questions selected</span>
+                        </div>
+                    </div>
+
+                    <!-- CO Mapping -->
+                    <div class="mb-3">
+                        <div class="small fw-bold text-dark mb-1">Course Outcome (CO) Mapping %:</div>
+                        <div id="dist-co-list">
+                            <span class="text-muted small">No questions selected</span>
+                        </div>
+                    </div>
+
+                    <!-- Bloom's Taxonomy Balance -->
+                    <div class="mb-3">
+                        <div class="small fw-bold text-dark mb-1">Bloom's Taxonomy Levels:</div>
+                        <div id="dist-bloom-list" class="d-flex flex-wrap">
+                            <span class="text-muted small">No questions selected</span>
+                        </div>
+                    </div>
+
+                    <!-- Balance Warnings Box -->
+                    <div id="dist-warnings-box" class="mb-3" style="display: none;"></div>
+
+                    <!-- Submit Paper Button -->
+                    <button type="button" id="btn-save-paper" class="btn btn-success w-100 py-2 fw-semibold shadow-sm" 
+                            onclick="PaperBuilder.savePaper()">
+                        <i class="bi bi-check-lg me-1"></i> Generate Question Paper
+                    </button>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <th:block th:fragment="scripts_fragment">
+        <script>
+            let availableQuestions = [];
+
+            document.addEventListener('DOMContentLoaded', function () {
+                PaperBuilder.init();
+                loadQuestionsForSubject();
+            });
+
+            async function loadQuestionsForSubject() {
+                const subject = document.getElementById('paper-subject').value;
+                const container = document.getElementById('questionsRepositoryList');
+                container.innerHTML = '<div class="text-center py-4 text-muted small"><div class="spinner-border spinner-border-sm text-primary mb-1"></div><div>Fetching questions...</div></div>';
+
+                try {
+                    const response = await fetch(`/api/questions?subject=${encodeURIComponent(subject)}&size=100`);
+                    const json = await response.json();
+                    availableQuestions = json.data.content;
+                    filterAvailableQuestions();
+                } catch (e) {
+                    container.innerHTML = '<div class="alert alert-danger small p-2">Failed to load questions.</div>';
+                }
+            }
+
+            function filterAvailableQuestions() {
+                const unitFilter = document.getElementById('filterUnitSelect').value;
+                const container = document.getElementById('questionsRepositoryList');
+
+                let filtered = availableQuestions;
+                if (unitFilter) {
+                    filtered = filtered.filter(q => q.unit === unitFilter);
+                }
+
+                if (filtered.length === 0) {
+                    container.innerHTML = '<div class="text-muted small py-4 text-center">No questions found matching criteria.</div>';
+                    return;
+                }
+
+                let html = '';
+                filtered.forEach(q => {
+                    const isSelected = PaperBuilder.selectedQuestions.has(q.id);
+                    const btnClass = isSelected ? 'btn-success' : 'btn-outline-primary';
+                    const btnLabel = isSelected ? '<i class="bi bi-check-circle"></i> Added' : '<i class="bi bi-plus-circle"></i> Add';
+
+                    html += `
+                        <div class="card p-3 border rounded-2 bg-light">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div>
+                                    <span class="badge bg-primary-subtle text-primary border small me-1">${q.unit}</span>
+                                    <span class="badge bg-info-subtle text-info-emphasis border small me-1">${q.courseOutcome}</span>
+                                    <span class="badge bg-secondary-subtle text-secondary border small">${q.bloomLevel}</span>
+                                </div>
+                                <span class="fw-bold text-dark small">${q.marks} M</span>
+                            </div>
+                            <div class="fw-semibold text-dark small mb-2">${q.questionText}</div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-white text-muted border small">${q.difficulty} | ${q.questionType}</span>
+                                <button type="button" class="btn btn-sm ${btnClass} btn-select-q" 
+                                        data-id="${q.id}" data-text="${q.questionText.replace(/"/g, '&quot;')}"
+                                        data-subject="${q.subject}" data-unit="${q.unit}" data-co="${q.courseOutcome}"
+                                        data-bloom="${q.bloomLevel}" data-marks="${q.marks}" data-difficulty="${q.difficulty}"
+                                        onclick="PaperBuilder.toggleQuestion(this)">
+                                    ${btnLabel}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            }
+        </script>
+    </th:block>
+</div>
+
+</body>
+</html>

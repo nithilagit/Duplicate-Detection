@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}"></head>
+<body>
+
+<div th:replace="~{layout/base :: html(content=~{::content_fragment}, scripts=~{::scripts_fragment})}">
+    <th:block th:fragment="content_fragment">
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a th:href="@{/dashboard}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/papers}">Question Papers</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="${paper.title}">View Paper</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="fw-bold mb-0 text-dark" th:text="${paper.title}">Question Paper Inspection</h3>
+                    <p class="text-secondary small mb-0" th:text="${paper.subject + ' | ' + paper.academicYear + ' | ' + paper.semester}"></p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/papers/print/{id}(id=${paper.id})}" target="_blank" class="btn btn-primary shadow-sm">
+                        <i class="bi bi-printer me-1"></i> Printable Format
+                    </a>
+                    <a th:href="@{/papers}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Papers
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Questions List Sheet -->
+            <div class="col-lg-8">
+                <div class="card card-academic p-4 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                        <div>
+                            <span class="badge bg-primary me-2" th:text="${paper.examCode != null ? paper.examCode : 'EXAM'}">CODE</span>
+                            <span class="fw-bold text-dark" th:text="${paper.subject}">Subject</span>
+                        </div>
+                        <div class="fw-bold text-dark fs-5" th:text="${'Total: ' + paper.totalMarks + ' Marks'}">50 Marks</div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 mb-4 small text-secondary">
+                        <strong>Instructions:</strong> <span th:text="${paper.instructions}">General instructions</span>
+                    </div>
+
+                    <!-- Questions Rendered by Sections -->
+                    <div class="d-flex flex-column gap-3">
+                        <div th:each="qItem : ${paper.questions}" class="card p-3 border rounded-3 bg-white">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-dark font-monospace" th:text="${'Q' + qItem.questionNumber}">Q1</span>
+                                    <span class="badge bg-light text-secondary border small" th:text="${qItem.sectionName}">Part A</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle small" th:text="${qItem.unit}">Unit I</span>
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle small" th:text="${qItem.courseOutcome}">CO1</span>
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle small" th:text="${qItem.bloomLevel}">Understand</span>
+                                </div>
+                                <span class="fw-bold text-dark" th:text="${'[' + qItem.allocatedMarks + ' Marks]'}">[10 Marks]</span>
+                            </div>
+                            <div class="fw-semibold text-dark lh-base" th:text="${qItem.questionText}">
+                                Question text goes here...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribution & Outcome Mapping Summary -->
+            <div class="col-lg-4">
+                <div class="card card-academic p-3 shadow-sm mb-3">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-pie-chart text-primary me-2"></i>Distribution Metrics</h6>
+
+                    <!-- Unit Distribution -->
+                    <div class="mb-3">
+                        <div class="small fw-bold text-dark mb-1">Unit Representation:</div>
+                        <div th:each="entry : ${paper.distribution.unitDistribution}" class="d-flex justify-content-between mb-1 small">
+                            <span th:text="${entry.key}">Unit I</span>
+                            <span class="badge bg-primary-subtle text-primary border" th:text="${entry.value + ' Qs'}">2 Qs</span>
+                        </div>
+                    </div>
+
+                    <!-- CO Mapping -->
+                    <div class="mb-3">
+                        <div class="small fw-bold text-dark mb-1">Course Outcome (CO) Mapping:</div>
+                        <div th:each="entry : ${paper.distribution.coPercentages}" class="mb-2">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span th:text="${entry.key}">CO1</span>
+                                <span class="fw-bold" th:text="${entry.value + '%'}">25%</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-info" th:style="${'width: ' + entry.value + '%'}"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bloom's Taxonomy -->
+                    <div class="mb-3">
+                        <div class="small fw-bold text-dark mb-1">Bloom's Taxonomy Breakdown:</div>
+                        <div class="d-flex flex-wrap gap-1">
+                            <span th:each="entry : ${paper.distribution.bloomDistribution}" 
+                                  class="badge bg-secondary-subtle text-secondary border" 
+                                  th:text="${entry.key + ': ' + entry.value}">Understand: 2</span>
+                        </div>
+                    </div>
+
+                    <!-- Difficulty -->
+                    <div class="mb-3">
+                        <div class="small fw-bold text-dark mb-1">Average Difficulty:</div>
+                        <span class="badge bg-warning-subtle text-warning-emphasis border" th:text="${paper.distribution.averageDifficulty}">Medium</span>
+                    </div>
+
+                    <!-- Advisory Warnings -->
+                    <div th:if="${!#lists.isEmpty(paper.distribution.advisoryWarnings)}" class="alert alert-warning p-2 small mb-0">
+                        <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Balance Advisory:</div>
+                        <ul class="mb-0 ps-3">
+                            <li th:each="w : ${paper.distribution.advisoryWarnings}" th:text="${w}">Warning text</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <th:block th:fragment="scripts_fragment"></th:block>
+</div>
+
+</body>
+</html>

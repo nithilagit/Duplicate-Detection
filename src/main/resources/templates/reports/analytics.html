@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}"></head>
+<body>
+
+<div th:replace="~{layout/base :: html(content=~{::content_fragment}, scripts=~{::scripts_fragment})}">
+    <th:block th:fragment="content_fragment">
+        <!-- Page Header -->
+        <div class="mb-4">
+            <h3 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-bar-chart-fill text-primary me-2"></i>Institutional Reports & Analytics
+            </h3>
+            <p class="text-secondary small mb-0">
+                Audited duplicate statistics, question utilization metrics, unit-wise distributions, and curriculum balance analytics.
+            </p>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-sm-6">
+                <div class="card card-academic p-3">
+                    <span class="text-muted small fw-semibold">Audit Checks Run</span>
+                    <h3 class="fw-bold mb-0 text-dark" th:text="${report.totalSimilarityChecks}">12</h3>
+                    <small class="text-muted">Total AI evaluations logged</small>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-sm-6">
+                <div class="card card-academic p-3 border-danger border-opacity-25">
+                    <span class="text-muted small fw-semibold">High Similarity Detections</span>
+                    <h3 class="fw-bold mb-0 text-danger" th:text="${report.highSimilarityCount}">5</h3>
+                    <small class="text-muted">Direct duplicate warnings (&ge;85%)</small>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-sm-6">
+                <div class="card card-academic p-3 border-warning border-opacity-25">
+                    <span class="text-muted small fw-semibold">Review Required</span>
+                    <h3 class="fw-bold mb-0 text-warning-emphasis" th:text="${report.mediumSimilarityCount}">3</h3>
+                    <small class="text-muted">Paraphrased questions (70-84%)</small>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-sm-6">
+                <div class="card card-academic p-3">
+                    <span class="text-muted small fw-semibold">Average Similarity Score</span>
+                    <h3 class="fw-bold mb-0 text-primary" th:text="${report.averageSimilarityScore + '%'}">58.4%</h3>
+                    <small class="text-muted">Mean semantic distance</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-4 mb-4">
+            <!-- Duplicate Audit Distribution -->
+            <div class="col-lg-4">
+                <div class="card card-academic p-3 h-100">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-pie-chart text-primary me-2"></i>Duplicate Audit Breakdown</h6>
+                    <div style="height: 240px;">
+                        <canvas id="repDupChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unit-Wise Questions Distribution -->
+            <div class="col-lg-4">
+                <div class="card card-academic p-3 h-100">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-bar-chart text-info me-2"></i>Questions Per Unit</h6>
+                    <div style="height: 240px;">
+                        <canvas id="repUnitChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cognitive Level Breakdown -->
+            <div class="col-lg-4">
+                <div class="card card-academic p-3 h-100">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-diagram-3 text-success me-2"></i>Bloom's Taxonomy Levels</h6>
+                    <div style="height: 240px;">
+                        <canvas id="repBloomChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Frequently Used & Least Used Questions Tables -->
+        <div class="row g-4 mb-4">
+            <!-- Frequently Used Questions -->
+            <div class="col-lg-6">
+                <div class="card card-academic p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-dark mb-0">
+                            <i class="bi bi-trophy-fill text-warning me-2"></i>Frequently Used Questions
+                        </h6>
+                        <span class="badge bg-light text-secondary border">High Demand</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Question</th>
+                                    <th>Subject</th>
+                                    <th>Usage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="q : ${report.frequentlyUsedQuestions}">
+                                    <td>
+                                        <div class="fw-semibold text-truncate" style="max-width: 280px;" 
+                                             th:text="${q.questionText}" th:title="${q.questionText}"></div>
+                                        <small class="text-muted" th:text="${q.unit + ' | ' + q.courseOutcome}"></small>
+                                    </td>
+                                    <td th:text="${q.subject}">Subject</td>
+                                    <td>
+                                        <span class="badge bg-primary rounded-pill" th:text="${q.usageCount + 'x'}">2x</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Least Used Questions (Opportunity for Paper Inclusion) -->
+            <div class="col-lg-6">
+                <div class="card card-academic p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-dark mb-0">
+                            <i class="bi bi-hourglass-split text-secondary me-2"></i>Least Used Questions (Underutilized)
+                        </h6>
+                        <span class="badge bg-light text-secondary border">Available</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Question</th>
+                                    <th>Subject</th>
+                                    <th>Usage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="q : ${report.leastUsedQuestions}">
+                                    <td>
+                                        <div class="fw-semibold text-truncate" style="max-width: 280px;" 
+                                             th:text="${q.questionText}" th:title="${q.questionText}"></div>
+                                        <small class="text-muted" th:text="${q.unit + ' | ' + q.courseOutcome}"></small>
+                                    </td>
+                                    <td th:text="${q.subject}">Subject</td>
+                                    <td>
+                                        <span class="badge bg-light text-muted border" th:text="${q.usageCount + 'x'}">0x</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <th:block th:fragment="scripts_fragment">
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            const highCount = /*[[${report.highSimilarityCount}]]*/ 0;
+            const medCount = /*[[${report.mediumSimilarityCount}]]*/ 0;
+            const uniqCount = /*[[${report.uniqueCount}]]*/ 0;
+            const unitCounts = /*[[${report.unitQuestionCounts}]]*/ {};
+            const bloomCounts = /*[[${report.bloomCounts}]]*/ {};
+
+            // 1. Duplicate Audit Breakdown
+            new Chart(document.getElementById('repDupChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['High Similarity', 'Review Required', 'Unique Questions'],
+                    datasets: [{
+                        data: [highCount, medCount, uniqCount],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // 2. Unit Questions Chart
+            new Chart(document.getElementById('repUnitChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(unitCounts),
+                    datasets: [{
+                        label: 'Questions',
+                        data: Object.values(unitCounts),
+                        backgroundColor: '#0284c7',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+
+            // 3. Bloom's Taxonomy Chart
+            new Chart(document.getElementById('repBloomChart'), {
+                type: 'polarArea',
+                data: {
+                    labels: Object.keys(bloomCounts),
+                    datasets: [{
+                        data: Object.values(bloomCounts),
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(14, 165, 233, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(168, 85, 247, 0.7)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+            /*]]>*/
+        </script>
+    </th:block>
+</div>
+
+</body>
+</html>

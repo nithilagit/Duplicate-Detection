@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}"></head>
+<body>
+
+<div th:replace="~{layout/base :: html(content=~{::content_fragment}, scripts=~{::scripts_fragment})}">
+    <th:block th:fragment="content_fragment">
+        <div class="mb-4">
+            <h3 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-person-badge-fill text-primary me-2"></i>Faculty Profile & Settings
+            </h3>
+            <p class="text-secondary small mb-0">Manage your academic profile credentials and secure your account access.</p>
+        </div>
+
+        <!-- Success & Error Alerts for Profile / Password -->
+        <div th:if="${profileSuccess}" class="alert alert-success py-2 small d-flex align-items-center mb-3">
+            <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${profileSuccess}">Profile updated</span>
+        </div>
+        <div th:if="${profileError}" class="alert alert-danger py-2 small d-flex align-items-center mb-3">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${profileError}">Error</span>
+        </div>
+
+        <div th:if="${passwordSuccess}" class="alert alert-success py-2 small d-flex align-items-center mb-3">
+            <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${passwordSuccess}">Password changed</span>
+        </div>
+        <div th:if="${passwordError}" class="alert alert-danger py-2 small d-flex align-items-center mb-3">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${passwordError}">Error</span>
+        </div>
+
+        <div class="row g-4">
+            <!-- Faculty Information Card -->
+            <div class="col-lg-6">
+                <div class="card card-academic p-4 shadow-sm h-100">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-lines-fill text-primary me-2"></i>Academic Profile</h5>
+
+                    <form th:action="@{/profile/update}" th:object="${profile}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-dark">Faculty ID</label>
+                            <input type="text" class="form-control form-control-sm bg-light" th:field="*{facultyId}" readonly>
+                            <small class="text-muted" style="font-size: 0.72rem;">Institutional identifier cannot be changed.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-dark">Faculty Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" th:field="*{name}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-dark">Email Address</label>
+                            <input type="email" class="form-control form-control-sm bg-light" th:field="*{email}" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-dark">Department <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" th:field="*{department}" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-dark">System Role</label>
+                            <div><span class="badge bg-primary-subtle text-primary border" th:text="*{role}">ROLE_FACULTY</span></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm">
+                            <i class="bi bi-save me-1"></i> Update Profile
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Password Change Card -->
+            <div class="col-lg-6">
+                <div class="card card-academic p-4 shadow-sm h-100">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-shield-lock text-warning me-2"></i>Change Password</h5>
+
+                    <form th:action="@{/profile/password}" th:object="${passwordChangeDto}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-dark">Current Password <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-sm">
+                                <input type="password" th:field="*{currentPassword}" id="curPass" class="form-control" required>
+                                <button type="button" class="btn btn-outline-secondary toggle-password-btn" data-target="#curPass">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-dark">New Password <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-sm">
+                                <input type="password" th:field="*{newPassword}" id="newPass" class="form-control" required>
+                                <button type="button" class="btn btn-outline-secondary toggle-password-btn" data-target="#newPass">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.72rem;">Minimum 6 characters.</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-dark">Confirm New Password <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-sm">
+                                <input type="password" th:field="*{confirmPassword}" id="confPass" class="form-control" required>
+                                <button type="button" class="btn btn-outline-secondary toggle-password-btn" data-target="#confPass">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning btn-sm px-4 shadow-sm fw-semibold">
+                            <i class="bi bi-key-fill me-1"></i> Update Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <th:block th:fragment="scripts_fragment"></th:block>
+</div>
+
+</body>
+</html>

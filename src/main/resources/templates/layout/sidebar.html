@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="sidebar" class="sidebar-wrapper">
+    <div class="sidebar-brand">
+        <i class="bi bi-cpu-fill"></i>
+        <div>
+            <div style="font-size: 1rem; line-height: 1.2;">AI Question Bank</div>
+            <small style="font-size: 0.68rem; color: #94a3b8; font-weight: normal;">Duplicate Detection</small>
+        </div>
+    </div>
+
+    <ul class="sidebar-menu">
+        <li class="menu-header">Core Navigation</li>
+        <li>
+            <a th:href="@{/dashboard}" th:classappend="${activePage == 'dashboard'} ? 'active' : ''">
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/questions}" th:classappend="${activePage == 'question-bank'} ? 'active' : ''">
+                <i class="bi bi-journal-text"></i>
+                <span>Question Bank</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/questions/add}" th:classappend="${activePage == 'add-question'} ? 'active' : ''">
+                <i class="bi bi-plus-circle-fill"></i>
+                <span>Add Question</span>
+            </a>
+        </li>
+
+        <li class="menu-header">AI & Examination</li>
+        <li>
+            <a th:href="@{/ai/detect}" th:classappend="${activePage == 'ai-detect'} ? 'active' : ''">
+                <i class="bi bi-magic"></i>
+                <span>AI Duplicate Detection</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/papers/builder}" th:classappend="${activePage == 'paper-builder'} ? 'active' : ''">
+                <i class="bi bi-file-earmark-ruled-fill"></i>
+                <span>Question Paper Builder</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/reports}" th:classappend="${activePage == 'reports'} ? 'active' : ''">
+                <i class="bi bi-bar-chart-fill"></i>
+                <span>Reports & Analytics</span>
+            </a>
+        </li>
+
+        <li class="menu-header">Account</li>
+        <li>
+            <a th:href="@{/profile}" th:classappend="${activePage == 'profile'} ? 'active' : ''">
+                <i class="bi bi-person-badge-fill"></i>
+                <span>Manage Profile</span>
+            </a>
+        </li>
+        <li>
+            <a href="javascript:void(0)" onclick="document.getElementById('logout-form').submit();">
+                <i class="bi bi-box-arrow-right text-danger"></i>
+                <span class="text-danger">Logout</span>
+            </a>
+            <form id="logout-form" th:action="@{/logout}" method="post" style="display: none;"></form>
+        </li>
+    </ul>
+
+    <div class="sidebar-footer">
+        <div class="d-flex align-items-center gap-2">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                 style="width: 32px; height: 32px; font-size: 0.8rem; font-weight: bold;">
+                FC
+            </div>
+            <div style="font-size: 0.75rem; color: #94a3b8; line-height: 1.2;">
+                <div class="text-white fw-bold">Faculty Portal</div>
+                <div>v1.0.0 (Spring Boot 3)</div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

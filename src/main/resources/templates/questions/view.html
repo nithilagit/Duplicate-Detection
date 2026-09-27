@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}"></head>
+<body>
+
+<div th:replace="~{layout/base :: html(content=~{::content_fragment}, scripts=~{::scripts_fragment})}">
+    <th:block th:fragment="content_fragment">
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a th:href="@{/dashboard}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/questions}">Question Bank</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Inspect Question #<span th:text="${question.id}">1</span></li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="fw-bold mb-0 text-dark">Question Details</h3>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/questions/edit/{id}(id=${question.id})}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil me-1"></i> Edit
+                    </a>
+                    <a th:href="@{/questions}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Bank
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Question Metadata Card -->
+            <div class="col-lg-7">
+                <div class="card card-academic p-4 shadow-sm h-100">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="badge bg-primary fs-6 font-monospace" th:text="${'Question #' + question.id}">#1</span>
+                        <span class="badge bg-light text-dark border px-3 py-2" th:text="${question.marks + ' Marks'}">10 Marks</span>
+                    </div>
+
+                    <h5 class="fw-bold text-dark lh-base mb-4" th:text="${question.questionText}">
+                        Explain the working principle of TCP congestion control.
+                    </h5>
+
+                    <div class="row g-3 py-3 border-top border-bottom bg-light rounded-3 px-2 mb-4">
+                        <div class="col-sm-4">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">SUBJECT</small>
+                            <span class="fw-semibold text-dark small" th:text="${question.subject}">Computer Networks</span>
+                        </div>
+                        <div class="col-sm-4">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">UNIT</small>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" th:text="${question.unit}">Unit III</span>
+                        </div>
+                        <div class="col-sm-4">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">COURSE OUTCOME</small>
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" th:text="${question.courseOutcome}">CO3</span>
+                        </div>
+                        <div class="col-sm-4">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">BLOOM'S TAXONOMY</small>
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" th:text="${question.bloomLevel}">Understand</span>
+                        </div>
+                        <div class="col-sm-4">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">DIFFICULTY</small>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" th:text="${question.difficulty}">Medium</span>
+                        </div>
+                        <div class="col-sm-4">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">QUESTION TYPE</small>
+                            <span class="badge bg-light text-dark border" th:text="${question.questionType}">Descriptive</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between text-muted small">
+                        <div><i class="bi bi-person me-1"></i> Added by: <span th:text="${question.createdByName}">Dr. Sarah Jenkins</span></div>
+                        <div><i class="bi bi-clock me-1"></i> <span th:text="${question.createdAtFormatted}">Today</span></div>
+                        <div><i class="bi bi-recycle me-1"></i> Times Used: <strong class="text-dark" th:text="${question.usageCount}">0</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Similar Questions AI Recommendations -->
+            <div class="col-lg-5">
+                <div class="card card-academic p-4 shadow-sm h-100">
+                    <h6 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-magic text-primary me-2"></i>Semantic Similarity Recommendations
+                    </h6>
+                    <p class="text-muted small mb-3">
+                        AI semantic comparison against other questions in the institution repository:
+                    </p>
+
+                    <div id="similarLoadingSpinner" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="small text-muted mt-2">Computing cosine similarities...</div>
+                    </div>
+
+                    <div id="similarQuestionsContainer" class="d-flex flex-column gap-2" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <th:block th:fragment="scripts_fragment">
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            const questionId = /*[[${question.id}]]*/ 1;
+
+            document.addEventListener('DOMContentLoaded', async function () {
+                try {
+                    const response = await fetch(`/api/questions/${questionId}/similar`);
+                    const json = await response.json();
+                    const result = json.data;
+
+                    document.getElementById('similarLoadingSpinner').style.display = 'none';
+                    const container = document.getElementById('similarQuestionsContainer');
+                    container.style.display = 'flex';
+
+                    if (result && result.matches && result.matches.length > 0) {
+                        let html = '';
+                        result.matches.forEach(m => {
+                            let badgeClass = m.similarityScore >= 85 ? 'bg-danger text-white' : (m.similarityScore >= 70 ? 'bg-warning text-dark' : 'bg-success text-white');
+                            html += `
+                                <div class="card p-3 border rounded-3 bg-light">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <span class="badge ${badgeClass} small fw-bold">${m.similarityScore.toFixed(1)}% Similarity</span>
+                                        <span class="badge bg-white text-dark border small">${m.unit} | ${m.courseOutcome}</span>
+                                    </div>
+                                    <div class="small fw-semibold text-dark mb-2">${m.questionText}</div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">${m.bloomLevel} | ${m.marks}M</small>
+                                        <a href="/questions/view/${m.id}" class="btn btn-sm btn-link p-0 small text-decoration-none">
+                                            Inspect Match <i class="bi bi-arrow-right"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<div class="text-center py-4 text-muted small">No other similar questions found.</div>';
+                    }
+                } catch (e) {
+                    console.error('Error fetching similar questions:', e);
+                }
+            });
+            /*]]>*/
+        </script>
+    </th:block>
+</div>
+
+</body>
+</html>

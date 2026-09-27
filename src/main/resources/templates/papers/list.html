@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}"></head>
+<body>
+
+<div th:replace="~{layout/base :: html(content=~{::content_fragment}, scripts=~{::scripts_fragment})}">
+    <th:block th:fragment="content_fragment">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-1 text-dark">Generated Question Papers</h3>
+                <p class="text-secondary small mb-0">Review generated examination papers with unit distribution, CO mapping, and printable layouts</p>
+            </div>
+            <div>
+                <a th:href="@{/papers/builder}" class="btn btn-primary shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Build New Question Paper
+                </a>
+            </div>
+        </div>
+
+        <div class="card card-academic p-0 overflow-hidden shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-secondary text-uppercase">
+                            <th>Exam Code & Title</th>
+                            <th>Subject</th>
+                            <th>Academic Session</th>
+                            <th>Total Marks</th>
+                            <th>Questions Count</th>
+                            <th>Created By</th>
+                            <th class="text-end" style="width: 180px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(papers)}">
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-file-earmark-x fs-1 d-block mb-2 text-secondary"></i>
+                                No question papers have been generated yet.
+                            </td>
+                        </tr>
+                        <tr th:each="p : ${papers}">
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${p.title}">Mid-Term Exam</div>
+                                <span class="badge bg-light text-muted border font-monospace" th:text="${p.examCode != null && !p.examCode.isEmpty() ? p.examCode : 'GEN-EXAM'}">CODE</span>
+                            </td>
+                            <td th:text="${p.subject}">Computer Networks</td>
+                            <td>
+                                <div class="small fw-semibold text-dark" th:text="${p.academicYear}">2024-2025</div>
+                                <small class="text-muted" th:text="${p.semester}">Semester V</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary fs-6" th:text="${p.totalMarks + ' M'}">50 M</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border" th:text="${#lists.size(p.questions) + ' Qs'}">6 Qs</span>
+                            </td>
+                            <td>
+                                <div class="small text-dark" th:text="${p.createdByName}">Dr. Sarah Jenkins</div>
+                                <small class="text-muted" th:text="${p.createdAtFormatted}">Today</small>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a th:href="@{/papers/view/{id}(id=${p.id})}" class="btn btn-outline-info" title="Inspect Paper">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a th:href="@{/papers/print/{id}(id=${p.id})}" target="_blank" class="btn btn-outline-secondary" title="Print Paper">
+                                        <i class="bi bi-printer"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            th:onclick="'confirmDeletePaper(' + ${p.id} + ')'" title="Delete Paper">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Hidden Delete Paper Form -->
+        <form id="deletePaperForm" method="post" style="display: none;"></form>
+
+        <div class="modal fade" id="deletePaperModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-body text-center p-4">
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-1 mb-2 d-block"></i>
+                        <h6 class="fw-bold">Delete Question Paper?</h6>
+                        <p class="text-muted small mb-3">This action will remove the question paper record permanently.</p>
+                        <div class="d-flex justify-content-center gap-2">
+                            <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-sm btn-danger" id="confirmDeletePaperBtn">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <th:block th:fragment="scripts_fragment">
+        <script>
+            let paperToDelete = null;
+            function confirmDeletePaper(id) {
+                paperToDelete = id;
+                const modal = new bootstrap.Modal(document.getElementById('deletePaperModal'));
+                modal.show();
+            }
+
+            document.getElementById('confirmDeletePaperBtn').addEventListener('click', function () {
+                if (paperToDelete) {
+                    const form = document.getElementById('deletePaperForm');
+                    form.action = `/papers/delete/${paperToDelete}`;
+                    form.submit();
+                }
+            });
+        </script>
+    </th:block>
+</div>
+
+</body>
+</html>

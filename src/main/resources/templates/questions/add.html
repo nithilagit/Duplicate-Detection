@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}"></head>
+<body>
+
+<div th:replace="~{layout/base :: html(content=~{::content_fragment}, scripts=~{::scripts_fragment})}">
+    <th:block th:fragment="content_fragment">
+        <!-- Breadcrumb & Header -->
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a th:href="@{/dashboard}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/questions}">Question Bank</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add Question</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold mb-1 text-dark">Add New Question</h3>
+            <p class="text-secondary small mb-0">Enter question details and taxonomy metadata to add to the centralized repository</p>
+        </div>
+
+        <div class="row justify-content-center">
+            <!-- Question Entry Form -->
+            <div class="col-lg-9 col-xl-8">
+                <div class="card card-academic p-4 shadow-sm">
+                    <form id="addQuestionForm" th:action="@{/questions/add}" th:object="${questionDto}" method="post">
+                        <!-- Validation Summary -->
+                        <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger py-2 small mb-3">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Please resolve the form errors below.
+                        </div>
+
+                        <!-- Question Text -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-dark mb-1">Question Text <span class="text-danger">*</span></label>
+                            <textarea th:field="*{questionText}" id="questionTextInput" rows="4" 
+                                      class="form-control" th:classappend="${#fields.hasErrors('questionText')} ? 'is-invalid' : ''"
+                                      placeholder="Type or paste the full question prompt here..."></textarea>
+                            <div class="invalid-feedback" th:errors="*{questionText}"></div>
+                            <small class="text-muted" style="font-size: 0.72rem;">Minimum 5 characters.</small>
+                        </div>
+
+                        <!-- Row: Subject & Unit -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold small text-dark">Subject <span class="text-danger">*</span></label>
+                                <select th:field="*{subject}" id="subjectSelect" class="form-select" th:classappend="${#fields.hasErrors('subject')} ? 'is-invalid' : ''">
+                                    <option th:each="s : ${subjects}" th:value="${s}" th:text="${s}"></option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{subject}"></div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold small text-dark">Unit <span class="text-danger">*</span></label>
+                                <select th:field="*{unit}" class="form-select" th:classappend="${#fields.hasErrors('unit')} ? 'is-invalid' : ''">
+                                    <option value="Unit I">Unit I</option>
+                                    <option value="Unit II">Unit II</option>
+                                    <option value="Unit III">Unit III</option>
+                                    <option value="Unit IV">Unit IV</option>
+                                    <option value="Unit V">Unit V</option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{unit}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Row: CO & Bloom's Taxonomy -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-dark">Course Outcome (CO) <span class="text-danger">*</span></label>
+                                <select th:field="*{courseOutcome}" class="form-select" th:classappend="${#fields.hasErrors('courseOutcome')} ? 'is-invalid' : ''">
+                                    <option value="CO1">CO1 - Foundational Principles</option>
+                                    <option value="CO2">CO2 - Core Architecture & Algorithms</option>
+                                    <option value="CO3">CO3 - Implementation & Protocols</option>
+                                    <option value="CO4">CO4 - Performance & Optimization</option>
+                                    <option value="CO5">CO5 - Advanced Topics & Security</option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{courseOutcome}"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-dark">Bloom's Taxonomy Level <span class="text-danger">*</span></label>
+                                <select th:field="*{bloomLevel}" class="form-select" th:classappend="${#fields.hasErrors('bloomLevel')} ? 'is-invalid' : ''">
+                                    <option value="Remember">Level 1: Remember</option>
+                                    <option value="Understand">Level 2: Understand</option>
+                                    <option value="Apply">Level 3: Apply</option>
+                                    <option value="Analyze">Level 4: Analyze</option>
+                                    <option value="Evaluate">Level 5: Evaluate</option>
+                                    <option value="Create">Level 6: Create</option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{bloomLevel}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Row: Marks, Difficulty, Question Type -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-dark">Marks <span class="text-danger">*</span></label>
+                                <input type="number" th:field="*{marks}" class="form-control" min="1" max="30" 
+                                       th:classappend="${#fields.hasErrors('marks')} ? 'is-invalid' : ''">
+                                <div class="invalid-feedback" th:errors="*{marks}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-dark">Difficulty Level <span class="text-danger">*</span></label>
+                                <select th:field="*{difficulty}" class="form-select" th:classappend="${#fields.hasErrors('difficulty')} ? 'is-invalid' : ''">
+                                    <option value="Easy">Easy</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Hard">Hard</option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{difficulty}"></div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-dark">Question Type <span class="text-danger">*</span></label>
+                                <select th:field="*{questionType}" class="form-select" th:classappend="${#fields.hasErrors('questionType')} ? 'is-invalid' : ''">
+                                    <option value="Descriptive">Descriptive</option>
+                                    <option value="Short Answer">Short Answer</option>
+                                    <option value="Problem">Problem / Numerical</option>
+                                    <option value="MCQ">MCQ</option>
+                                    <option value="Long Answer">Long Answer</option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{questionType}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a th:href="@{/questions}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg me-1"></i> Cancel
+                            </a>
+                            <button type="submit" id="btnSubmitQuestion" class="btn btn-primary px-4 shadow-sm">
+                                <i class="bi bi-check-lg me-1"></i> Save Question
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <th:block th:fragment="scripts_fragment">
+    </th:block>
+</div>
+
+</body>
+</html>

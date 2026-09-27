@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${paper.title + ' - Examination Paper'}">Print Question Paper</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f1f5f9;
+            color: #000000;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        .print-container {
+            max-width: 860px;
+            margin: 2rem auto;
+            background: #ffffff;
+            padding: 3rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #cbd5e1;
+        }
+        .inst-header {
+            text-align: center;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .meta-table td {
+            padding: 0.25rem 0.5rem;
+            font-size: 11pt;
+        }
+        .question-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .question-table th, .question-table td {
+            border: 1px solid #000000;
+            padding: 0.5rem;
+            font-size: 11pt;
+        }
+        @media print {
+            body {
+                background: #ffffff !important;
+            }
+            .print-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print text-center py-3 bg-dark text-white shadow-sm sticky-top">
+    <span class="me-3 fw-bold">Official Examination Print Preview</span>
+    <button type="button" class="btn btn-primary btn-sm me-2" onclick="window.print()">
+        <i class="bi bi-printer me-1"></i> Print / Save as PDF
+    </button>
+    <button type="button" class="btn btn-outline-light btn-sm" onclick="window.close()">
+        Close Window
+    </button>
+</div>
+
+<div class="print-container">
+    <!-- University Header -->
+    <div class="inst-header">
+        <h4 class="fw-bold mb-1 text-uppercase">INSTITUTE OF HIGHER TECHNOLOGY & ACADEMICS</h4>
+        <h6 class="mb-1 fw-bold text-uppercase" th:text="'DEPARTMENT OF ' + (${currentFaculty != null ? currentFaculty.department : (defaultDepartment != null ? defaultDepartment : 'ARTIFICIAL INTELLIGENCE & DATA SCIENCE')})">DEPARTMENT OF ARTIFICIAL INTELLIGENCE & DATA SCIENCE</h6>
+        <div class="fw-bold fs-5 mt-2" th:text="${paper.title}">END-SEMESTER EXAMINATION</div>
+    </div>
+
+    <!-- Exam Meta Table -->
+    <table class="w-100 meta-table mb-3">
+        <tr>
+            <td style="width: 20%;"><strong>Course Code:</strong></td>
+            <td style="width: 30%;" th:text="${paper.examCode != null ? paper.examCode : 'CS-501'}">CS-501</td>
+            <td style="width: 20%;"><strong>Academic Year:</strong></td>
+            <td style="width: 30%;" th:text="${paper.academicYear}">2024-2025</td>
+        </tr>
+        <tr>
+            <td><strong>Course Name:</strong></td>
+            <td class="fw-bold" th:text="${paper.subject}">Computer Networks</td>
+            <td><strong>Semester:</strong></td>
+            <td th:text="${paper.semester}">Semester V</td>
+        </tr>
+        <tr>
+            <td><strong>Duration:</strong></td>
+            <td>3 Hours</td>
+            <td><strong>Maximum Marks:</strong></td>
+            <td class="fw-bold" th:text="${paper.totalMarks}">50 Marks</td>
+        </tr>
+    </table>
+
+    <div class="border-top border-bottom py-2 my-3" style="font-size: 10.5pt; font-style: italic;">
+        <strong>Instructions to Candidates:</strong>
+        <span th:text="${paper.instructions}">Answer all questions in Part A and any four questions from Part B.</span>
+    </div>
+
+    <!-- Questions Table -->
+    <table class="question-table">
+        <thead style="background-color: #f8fafc;">
+            <tr class="text-center fw-bold">
+                <th style="width: 60px;">Q. No.</th>
+                <th>Question Description</th>
+                <th style="width: 80px;">CO</th>
+                <th style="width: 100px;">Bloom's</th>
+                <th style="width: 70px;">Marks</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="item : ${paper.questions}">
+                <td class="text-center fw-bold" th:text="${'Q' + item.questionNumber}">Q1</td>
+                <td>
+                    <div th:text="${item.questionText}">Explain TCP congestion control.</div>
+                    <small class="text-muted" th:text="${'[' + item.unit + ' | ' + item.sectionName + ']'}">[Unit III | Part A]</small>
+                </td>
+                <td class="text-center font-monospace" th:text="${item.courseOutcome}">CO3</td>
+                <td class="text-center" th:text="${item.bloomLevel}">Understand</td>
+                <td class="text-center fw-bold" th:text="${item.allocatedMarks}">10</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="text-center mt-5 pt-4 text-muted small" style="border-top: 1px dashed #cbd5e1;">
+        --- END OF QUESTION PAPER ---
+    </div>
+</div>
+
+</body>
+</html>

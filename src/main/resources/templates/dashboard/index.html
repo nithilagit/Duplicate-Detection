@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}"></head>
+<body>
+
+<div th:replace="~{layout/base :: html(content=~{::content_fragment}, scripts=~{::scripts_fragment})}">
+    <th:block th:fragment="content_fragment">
+        <!-- Dashboard Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-1 text-dark">
+                    Welcome back, <span th:text="${faculty != null ? faculty.name : 'Faculty Member'}">Dr. Sarah Jenkins</span>!
+                </h3>
+                <p class="text-secondary small mb-0">
+                    <i class="bi bi-building me-1"></i> <span th:text="${currentFaculty != null ? currentFaculty.department : (faculty != null ? faculty.department : (defaultDepartment != null ? defaultDepartment : 'Artificial Intelligence and Data Science'))}">Artificial Intelligence and Data Science</span>
+                    | Institutional AI Question Bank & Examination Analytics
+                </p>
+            </div>
+            <div class="d-flex gap-2 mt-3 mt-md-0">
+                <a th:href="@{/questions/add}" class="btn btn-primary shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Add Question
+                </a>
+                <a th:href="@{/papers/builder}" class="btn btn-outline-primary shadow-sm">
+                    <i class="bi bi-file-earmark-plus me-1"></i> Build Paper
+                </a>
+            </div>
+        </div>
+
+        <!-- 5 KPI Cards -->
+        <div class="row g-3 mb-4">
+            <!-- Total Questions -->
+            <div class="col-xl col-md-4 col-sm-6">
+                <div class="card card-academic h-100 p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small fw-semibold">Total Questions</span>
+                        <div class="kpi-icon-box bg-primary-subtle text-primary">
+                            <i class="bi bi-journal-check"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-dark" th:text="${stats.totalQuestions}">45</h3>
+                    <small class="text-muted" style="font-size: 0.72rem;">Central repository</small>
+                </div>
+            </div>
+
+            <!-- Duplicate Detections -->
+            <div class="col-xl col-md-4 col-sm-6">
+                <div class="card card-academic h-100 p-3 border-danger border-opacity-25">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small fw-semibold">Duplicates Detected</span>
+                        <div class="kpi-icon-box bg-danger-subtle text-danger">
+                            <i class="bi bi-copy"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-danger" th:text="${stats.totalDuplicatesDetected}">8</h3>
+                    <small class="text-muted" style="font-size: 0.72rem;">Flagged for review</small>
+                </div>
+            </div>
+
+            <!-- Papers Created -->
+            <div class="col-xl col-md-4 col-sm-6">
+                <div class="card card-academic h-100 p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small fw-semibold">Papers Built</span>
+                        <div class="kpi-icon-box bg-info-subtle text-info">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-dark" th:text="${stats.totalQuestionPapers}">2</h3>
+                    <small class="text-muted" style="font-size: 0.72rem;">Ready for printing</small>
+                </div>
+            </div>
+
+            <!-- Most Used Question -->
+            <div class="col-xl col-md-4 col-sm-6">
+                <div class="card card-academic h-100 p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small fw-semibold">Top Question Usage</span>
+                        <div class="kpi-icon-box bg-warning-subtle text-warning">
+                            <i class="bi bi-star-fill"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-dark" th:text="${stats.mostUsedQuestionCount + 'x'}">2x</h3>
+                    <small class="text-truncate text-muted d-block" style="font-size: 0.72rem;" 
+                           th:title="${stats.mostUsedQuestion}" th:text="${stats.mostUsedQuestion}">
+                        TCP Congestion Control
+                    </small>
+                </div>
+            </div>
+
+            <!-- Average Similarity -->
+            <div class="col-xl col-md-4 col-sm-6">
+                <div class="card card-academic h-100 p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small fw-semibold">Avg Similarity</span>
+                        <div class="kpi-icon-box bg-purple-subtle text-primary">
+                            <i class="bi bi-percent"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-primary" th:text="${stats.averageSimilarity + '%'}">62.3%</h3>
+                    <small class="text-muted" style="font-size: 0.72rem;">Semantic baseline</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1: Unit Distribution and Bloom's Taxonomy -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="card card-academic p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-bar-chart-line text-primary me-2"></i>Question Distribution by Unit
+                        </h6>
+                        <span class="badge bg-light text-secondary border">Academic Balance</span>
+                    </div>
+                    <div style="height: 250px;">
+                        <canvas id="unitChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card card-academic p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-diagram-3 text-info me-2"></i>Bloom's Taxonomy Breakdown
+                        </h6>
+                        <span class="badge bg-light text-secondary border">Cognitive Levels</span>
+                    </div>
+                    <div style="height: 250px;">
+                        <canvas id="bloomChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2: Difficulty & Duplicate Detection Stats -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-4">
+                <div class="card card-academic p-3 h-100">
+                    <h6 class="fw-bold mb-3 text-dark">
+                        <i class="bi bi-pie-chart text-warning me-2"></i>Difficulty Levels
+                    </h6>
+                    <div style="height: 220px;">
+                        <canvas id="diffChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card card-academic p-3 h-100">
+                    <h6 class="fw-bold mb-3 text-dark">
+                        <i class="bi bi-shield-check text-success me-2"></i>Duplicate Detection Audit
+                    </h6>
+                    <div style="height: 220px;">
+                        <canvas id="dupStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card card-academic p-3 h-100">
+                    <h6 class="fw-bold mb-3 text-dark">
+                        <i class="bi bi-lightning-charge text-danger me-2"></i>Quick Actions
+                    </h6>
+                    <div class="d-grid gap-2">
+                        <a th:href="@{/questions/add}" class="btn btn-primary d-flex align-items-center justify-content-between py-2">
+                            <span><i class="bi bi-plus-circle me-2"></i> Add New Question</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                        <a th:href="@{/ai/detect}" class="btn btn-outline-primary d-flex align-items-center justify-content-between py-2">
+                            <span><i class="bi bi-magic me-2"></i> Test AI Detection</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                        <a th:href="@{/papers/builder}" class="btn btn-outline-success d-flex align-items-center justify-content-between py-2">
+                            <span><i class="bi bi-file-earmark-plus me-2"></i> Build Question Paper</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                        <a th:href="@{/reports}" class="btn btn-outline-secondary d-flex align-items-center justify-content-between py-2">
+                            <span><i class="bi bi-graph-up me-2"></i> View Analytics</span>
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity and Recent Questions -->
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="card card-academic p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-clock-history text-secondary me-2"></i>Recently Added Questions
+                        </h6>
+                        <a th:href="@{/questions}" class="btn btn-link btn-sm text-decoration-none">View All &rarr;</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Question</th>
+                                    <th>Subject</th>
+                                    <th>Unit</th>
+                                    <th>Marks</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="q : ${stats.recentQuestions}">
+                                    <td>
+                                        <div class="fw-semibold text-truncate" style="max-width: 280px;" 
+                                             th:text="${q.questionText}" th:title="${q.questionText}"></div>
+                                        <small class="text-muted" th:text="${q.bloomLevel + ' | ' + q.difficulty}"></small>
+                                    </td>
+                                    <td th:text="${q.subject}">Subject</td>
+                                    <td><span class="badge bg-light text-dark border" th:text="${q.unit}">Unit I</span></td>
+                                    <td class="fw-bold" th:text="${q.marks + ' M'}">10 M</td>
+                                    <td>
+                                        <a th:href="@{/questions/view/{id}(id=${q.id})}" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card card-academic p-3">
+                    <h6 class="fw-bold mb-3 text-dark">
+                        <i class="bi bi-activity text-info me-2"></i>Audit Activity Stream
+                    </h6>
+                    <ul class="list-group list-group-flush small" style="max-height: 290px; overflow-y: auto;">
+                        <li th:each="msg : ${stats.recentActivityMessages}" class="list-group-item px-0 py-2 border-0">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-dot fs-4 text-primary lh-1"></i>
+                                <span th:text="${msg}">Action message</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <!-- Chart.js Scripts Fragment -->
+    <th:block th:fragment="scripts_fragment">
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            const unitData = /*[[${stats.unitDistribution}]]*/ {};
+            const bloomData = /*[[${stats.bloomDistribution}]]*/ {};
+            const diffData = /*[[${stats.difficultyDistribution}]]*/ {};
+            const dupStatusData = /*[[${stats.duplicateStatusDistribution}]]*/ {};
+
+            // 1. Unit Distribution Chart
+            new Chart(document.getElementById('unitChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(unitData),
+                    datasets: [{
+                        label: 'Questions',
+                        data: Object.values(unitData),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+
+            // 2. Bloom's Taxonomy Chart
+            new Chart(document.getElementById('bloomChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(bloomData),
+                    datasets: [{
+                        label: 'Questions',
+                        data: Object.values(bloomData),
+                        backgroundColor: ['#60a5fa', '#38bdf8', '#34d399', '#facc15', '#f87171', '#a78bfa'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+
+            // 3. Difficulty Chart
+            new Chart(document.getElementById('diffChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(diffData),
+                    datasets: [{
+                        data: Object.values(diffData),
+                        backgroundColor: ['#22c55e', '#eab308', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // 4. Duplicate Status Chart
+            new Chart(document.getElementById('dupStatusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(dupStatusData),
+                    datasets: [{
+                        data: Object.values(dupStatusData),
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+            /*]]>*/
+        </script>
+    </th:block>
+</div>
+
+</body>
+</html>

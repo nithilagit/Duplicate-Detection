@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<header th:fragment="navbar" class="top-navbar">
+    <div class="d-flex align-items-center gap-3">
+        <h5 class="mb-0 fw-bold text-dark">
+            <span class="text-primary"><i class="bi bi-mortarboard-fill me-2"></i></span>
+            AI-Based Duplicate Question Detection System
+        </h5>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+        <div class="text-end d-none d-md-block">
+            <div class="fw-bold text-dark" style="font-size: 0.9rem;" th:text="${currentFaculty != null ? currentFaculty.email : 'faculty@eec.srmrmp.edu.in'}">faculty@eec.srmrmp.edu.in</div>
+            <small class="text-muted" style="font-size: 0.75rem;" th:text="${currentFaculty != null ? currentFaculty.department : (defaultDepartment != null ? defaultDepartment : 'Artificial Intelligence and Data Science')}">Artificial Intelligence and Data Science</small>
+        </div>
+
+        <div class="dropdown">
+            <button class="btn btn-light rounded-circle border shadow-sm p-0 d-flex align-items-center justify-content-center" 
+                    type="button" id="userMenuBtn" data-bs-toggle="dropdown" aria-expanded="false" 
+                    style="width: 40px; height: 40px;">
+                <i class="bi bi-person-fill text-primary" style="font-size: 1.25rem;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userMenuBtn" style="min-width: 220px;">
+                <li class="px-3 py-2 border-bottom">
+                    <div class="fw-bold text-truncate" th:text="${currentFaculty != null ? currentFaculty.email : 'faculty@eec.srmrmp.edu.in'}">faculty@eec.srmrmp.edu.in</div>
+                    <small class="text-muted text-truncate d-block" th:text="${currentFaculty != null ? currentFaculty.department : (defaultDepartment != null ? defaultDepartment : 'Artificial Intelligence and Data Science')}">Artificial Intelligence and Data Science</small>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/profile}">
+                        <i class="bi bi-person-gear me-2"></i> Manage Profile
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/papers/builder}">
+                        <i class="bi bi-plus-square me-2"></i> Build Question Paper
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item py-2 text-danger" href="javascript:void(0)" 
+                       onclick="document.getElementById('logout-form').submit();">
+                        <i class="bi bi-box-arrow-right me-2"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</header>
+</body>
+</html>
